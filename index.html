@@ -1,0 +1,3652 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tower Defense: Захисники Королівства</title>
+  <style>
+    :root {
+      --bg-main: #0c1017;
+      --bg-panel: rgba(18, 24, 38, 0.95);
+      --bg-card: #1a2234;
+      --bg-card-hover: #26334d;
+      --border-color: #2e3e5c;
+      --border-accent: #3b82f6;
+      --accent-gold: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    /* Верхня панель стану */
+    #top-bar {
+      width: 100%;
+      max-width: 1040px;
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-panel);
+      border-bottom: 2px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      z-index: 20;
+    }
+
+    .stats-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-badge.gold {
+      color: var(--accent-gold);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .stat-badge.lives {
+      color: var(--accent-red);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .stat-badge.wave {
+      color: var(--accent-blue);
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Кнопка Skip зверху посередині */
+    .skip-center-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-skip {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0b0f17;
+      border: 2px solid #fbbf24;
+      padding: 7px 22px;
+      font-size: 14px;
+      font-weight: 900;
+      border-radius: 22px;
+      letter-spacing: 1.5px;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.45);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      animation: pulseSkip 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseSkip {
+      0%, 100% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 22px rgba(245, 158, 11, 0.8), 0 0 6px #fbbf24; }
+    }
+
+    .btn-skip:hover:not(:disabled) {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      transform: translateY(-1px) scale(1.05);
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.85);
+    }
+
+    .btn-skip:active:not(:disabled) {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .btn-skip:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      filter: grayscale(0.8);
+      animation: none;
+      box-shadow: none;
+    }
+
+    button {
+      font-family: inherit;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-blue);
+      transform: translateY(-1px);
+    }
+
+    .btn-icon.active {
+      background: var(--accent-blue);
+      color: #041021;
+      border-color: var(--accent-blue);
+    }
+
+    /* Головна ігрова зона */
+    #game-container {
+      position: relative;
+      width: 100%;
+      max-width: 1040px;
+      margin: 8px auto 0;
+      padding: 0 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1000 / 600;
+      max-height: 70vh;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 0 2px var(--border-color);
+      background: #000;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* Верхня смуга здоров'я боса */
+    #boss-health-bar {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 85%;
+      max-width: 520px;
+      background: rgba(12, 16, 23, 0.92);
+      border: 2px solid var(--accent-red);
+      border-radius: 12px;
+      padding: 8px 14px;
+      box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+    }
+
+    .boss-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .boss-title {
+      color: #f87171;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .boss-hp-text {
+      color: var(--text-main);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .boss-hp-track {
+      width: 100%;
+      height: 12px;
+      background: #331518;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+
+    .boss-hp-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #dc2626, #f87171);
+      transition: width 0.1s linear;
+    }
+
+    /* Оповіщення хвилі */
+    #wave-announcer {
+      position: absolute;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10, 15, 26, 0.95);
+      border: 2px solid var(--accent-gold);
+      padding: 16px 36px;
+      border-radius: 16px;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      letter-spacing: 1.5px;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 10px 40px rgba(245, 158, 11, 0.4);
+      z-index: 15;
+    }
+
+    #wave-announcer.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    /* Нижня панель керування та вибору башт */
+    #bottom-bar {
+      width: 100%;
+      max-width: 1040px;
+      margin: 10px auto;
+      padding: 8px 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .tower-cards-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tower-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-width: 140px;
+      position: relative;
+    }
+
+    .tower-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-blue);
+      transform: translateY(-2px);
+    }
+
+    .tower-card.selected {
+      border-color: var(--accent-gold);
+      background: #25283b;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.35);
+    }
+
+    .tower-card.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.7);
+    }
+
+    .tower-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tower-card-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tower-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .tower-card-cost {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .key-hint {
+      position: absolute;
+      top: 3px;
+      right: 5px;
+      font-size: 9px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1px 4px;
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    /* Інфо-панель вибраної розміщеної башти */
+    #selected-tower-panel {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #151c2c;
+      border: 1px solid var(--accent-blue);
+      border-radius: 10px;
+      padding: 6px 12px;
+    }
+
+    .tower-stats-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 12px;
+    }
+
+    .tower-name-level {
+      font-weight: 800;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stars {
+      color: var(--accent-gold);
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .tower-stats-values {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .panel-btn {
+      padding: 7px 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .btn-upgrade {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+    }
+    .btn-upgrade:hover:not(:disabled) {
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+    .btn-upgrade:disabled {
+      background: #334155;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .btn-sell {
+      background: linear-gradient(135deg, #b91c1c, #dc2626);
+      color: #fff;
+    }
+    .btn-sell:hover {
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+    }
+
+    /* Кнопка наступної хвилі */
+    .btn-wave {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 14px;
+      border-radius: 8px;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-wave:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.6);
+    }
+
+    .btn-wave:disabled {
+      background: #252e42;
+      color: #64748b;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-wave.highlight {
+      animation: pulseWave 1.4s infinite;
+    }
+
+    @keyframes pulseWave {
+      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+
+    /* Модальні вікна (Вибір карти, Перемога, Поразка) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(8, 12, 20, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: var(--bg-panel);
+      border: 2px solid var(--border-color);
+      border-radius: 20px;
+      max-width: 680px;
+      width: 100%;
+      padding: 28px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9);
+      text-align: center;
+      animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-title {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .map-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .map-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .map-select-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .map-select-card:hover {
+      border-color: var(--accent-blue);
+      transform: translateY(-3px);
+      background: var(--bg-card-hover);
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+    }
+
+    .map-preview-thumb {
+      width: 100%;
+      height: 110px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .map-preview-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .map-diff {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .diff-normal { background: rgba(34, 197, 94, 0.2); color: var(--accent-green); }
+    .diff-hard { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+    .map-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .game-over-title {
+      color: var(--accent-red);
+    }
+
+    .victory-title {
+      color: var(--accent-gold);
+    }
+
+    .modal-stats {
+      background: var(--bg-card);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-around;
+      gap: 8px;
+    }
+
+    .modal-stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .modal-stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .modal-stat-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .btn-action-large {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #fff;
+      padding: 12px 32px;
+      font-size: 16px;
+      font-weight: 800;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-action-large:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+    }
+
+    /* Довідка / Правила */
+    .guide-tip {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-align: center;
+    }
+
+    /* Адаптивність */
+    @media (max-width: 860px) {
+      #top-bar {
+        padding: 8px 10px;
+        gap: 8px;
+        justify-content: center;
+      }
+      .skip-center-group {
+        order: 3;
+        width: 100%;
+        margin-top: 2px;
+      }
+      .btn-skip {
+        width: 100%;
+        padding: 8px 14px;
+        font-size: 13px;
+      }
+      .stat-badge {
+        padding: 4px 8px;
+        font-size: 13px;
+      }
+      .btn-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+      }
+      .tower-card {
+        min-width: 110px;
+        padding: 6px 8px;
+      }
+      .tower-icon-box {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+      }
+      .tower-card-name { font-size: 11px; }
+      .tower-card-cost { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ВЕРХНЯ ПАНЕЛЬ СТАНУ -->
+  <header id="top-bar">
+    <div class="stats-group">
+      <div class="stat-badge gold" title="Золото">
+        <span>🪙</span>
+        <span id="gold-val">250</span>
+      </div>
+      <div class="stat-badge lives" title="Залишок життів">
+        <span>❤️</span>
+        <span id="lives-val">20</span>
+      </div>
+      <div class="stat-badge wave" title="Поточна хвиля">
+        <span>🌊</span>
+        <span id="wave-val">0 / 25</span>
+      </div>
+      <div class="stat-badge" style="color: #cbd5e1;" title="Живих ворогів">
+        <span>👾</span>
+        <span id="enemies-val">0</span>
+      </div>
+    </div>
+
+    <!-- КНОПКА SKIP ЗВЕРХУ ПОСЕРЕДИНІ -->
+    <div class="skip-center-group">
+      <button id="btn-top-skip" class="btn-skip" title="Пропустити очікування / Почати наступну хвилю негайно (бонус +30🪙)">
+        <span style="font-size: 15px;">⏩</span>
+        <span>SKIP</span>
+      </button>
+    </div>
+
+    <div class="controls-group">
+      <button id="btn-speed" class="btn-icon" title="Зміна швидкості гри (x1 / x2 / x3)">x1</button>
+      <button id="btn-pause" class="btn-icon" title="Пауза гри">⏸</button>
+      <button id="btn-sound" class="btn-icon active" title="Увімкнути/Вимкнути звук">🔊</button>
+      <button id="btn-restart" class="btn-icon" title="Перезапустити або змінити карту">🔄</button>
+    </div>
+  </header>
+
+  <!-- ГОЛОВНИЙ ІГРОВИЙ КОНТЕЙНЕР -->
+  <main id="game-container">
+    <div id="canvas-wrapper">
+      <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+      <!-- Смужка боса вгорі полотна -->
+      <div id="boss-health-bar">
+        <div class="boss-header">
+          <div class="boss-title" id="boss-name-label">
+            <span>💀</span>
+            <span id="boss-title-text">БОС: КАМ'ЯНИЙ ГОЛЕМ</span>
+          </div>
+          <div class="boss-hp-text" id="boss-hp-text">1000 / 1000</div>
+        </div>
+        <div class="boss-hp-track">
+          <div class="boss-hp-fill" id="boss-hp-fill"></div>
+        </div>
+      </div>
+
+      <!-- Оповіщення хвилі -->
+      <div id="wave-announcer">ХВИЛЯ 1</div>
+    </div>
+
+    <!-- НИЖНЯ ПАНЕЛЬ КЕРУВАННЯ -->
+    <div id="bottom-bar">
+      <!-- Вибір башт для будівництва -->
+      <div class="tower-cards-container" id="build-panel">
+        <div class="tower-card" data-type="ARCHER" title="Стрілець: швидка стрільба по одиничних цілях">
+          <span class="key-hint">1</span>
+          <div class="tower-icon-box" style="color: #38bdf8;">🏹</div>
+          <div class="tower-card-info">
+            <span class="tower-card-name">Стрілець</span>
+            <span class="tower-card-cost">🪙 100</span>
+          </div>
+        </div>
+
+        <div class="tower-card" data-type="CANNON" title="Гармата: урон по області (Splash) з вибухом">
+          <span class="key-hint">2</span>
+          <div class="tower-icon-box" style="color: #f97316;">💣</div>
+          <div class="tower-card-info">
+            <span class="tower-card-name">Гармата</span>
+            <span class="tower-card-cost">🪙 150</span>
+          </div>
+        </div>
+
+        <div class="tower-card" data-type="MAGE" title="Маг: сповільнює ворогів крижаною магією">
+          <span class="key-hint">3</span>
+          <div class="tower-icon-box" style="color: #a855f7;">❄️</div>
+          <div class="tower-card-info">
+            <span class="tower-card-name">Маг</span>
+            <span class="tower-card-cost">🪙 125</span>
+          </div>
+        </div>
+
+        <!-- Нові башти: Снайпер, Тесла, Отруйна -->
+        <div class="tower-card" data-type="SNIPER" title="Снайпер: величезна дальність, нищівний постріл, критичні удари на рівні 4">
+          <span class="key-hint">4</span>
+          <div class="tower-icon-box" style="color: #84cc16;">🎯</div>
+          <div class="tower-card-info">
+            <span class="tower-card-name">Снайпер</span>
+            <span class="tower-card-cost">🪙 175</span>
+          </div>
+        </div>
+
+        <div class="tower-card" data-type="TESLA" title="Тесла: ланцюгова блискавка б'є по 3-5 ворогам, паралізує на рівні 4">
+          <span class="key-hint">5</span>
+          <div class="tower-icon-box" style="color: #facc15;">⚡</div>
+          <div class="tower-card-info">
+            <span class="tower-card-name">Тесла</span>
+            <span class="tower-card-cost">🪙 200</span>
+          </div>
+        </div>
+
+        <div class="tower-card" data-type="POISON" title="Отруйна: накладає отруту (урон з часом), сповільнює на рівні 4">
+          <span class="key-hint">6</span>
+          <div class="tower-icon-box" style="color: #4ade80;">🧪</div>
+          <div class="tower-card-info">
+            <span class="tower-card-name">Отруйна</span>
+            <span class="tower-card-cost">🪙 140</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Панель інспекції вибраної збудованої башти -->
+      <div id="selected-tower-panel">
+        <div class="tower-stats-preview">
+          <div class="tower-name-level">
+            <span id="inspect-name">Вежа</span>
+            <span class="stars" id="inspect-stars">★☆☆☆</span>
+          </div>
+          <div class="tower-stats-values" id="inspect-stats">Шкода: 15 | Радіус: 130</div>
+        </div>
+        <button id="btn-upgrade-tower" class="panel-btn btn-upgrade">
+          ⬆️ Покращити (<span id="upgrade-cost">80</span>🪙)
+        </button>
+        <button id="btn-sell-tower" class="panel-btn btn-sell">
+          💰 Продати (+<span id="sell-value">70</span>🪙)
+        </button>
+        <button id="btn-close-inspect" class="btn-icon" style="width:28px;height:28px;font-size:12px;">✖</button>
+      </div>
+
+      <!-- Кнопка запуску хвилі -->
+      <button id="btn-next-wave" class="btn-wave highlight">
+        ▶ Почати хвилю 1
+      </button>
+    </div>
+
+    <div class="guide-tip">
+      💡 Клік по вільній траві/скелі — будувати вежу. Клік по існуючій вежі — покращити або продати. Клавіші: 1-6 (башта), Пробіл (Хвиля/Пауза), Enter/N (Skip).
+    </div>
+  </main>
+
+  <!-- МОДАЛЬНЕ ВІКНО: ВИБІР КАРТИ -->
+  <div class="modal-overlay" id="modal-map-select">
+    <div class="modal-card">
+      <h2 class="modal-title">🏰 Оберіть карту</h2>
+      <p class="modal-subtitle">Оберіть поле битви перед початком оборони королівства</p>
+
+      <div class="map-cards-grid">
+        <!-- Карта 1 -->
+        <div class="map-select-card" data-map="VALLEY">
+          <div class="map-preview-thumb">
+            <canvas class="map-preview-canvas" id="preview-valley" width="280" height="120"></canvas>
+          </div>
+          <div class="map-name">
+            <span>🌿 Зелена долина</span>
+            <span class="map-diff diff-normal">Нормальна</span>
+          </div>
+          <p class="map-desc">
+            Звивистий шлях через затишний зелений ліс. Багато зручних місць для розміщення гармат і далекобійних лучників.
+          </p>
+        </div>
+
+        <!-- Карта 2 -->
+        <div class="map-select-card" data-map="LAVA">
+          <div class="map-preview-thumb">
+            <canvas class="map-preview-canvas" id="preview-lava" width="280" height="120"></canvas>
+          </div>
+          <div class="map-name">
+            <span>🌋 Лавовий каньйон</span>
+            <span class="map-diff diff-hard">Складна</span>
+          </div>
+          <p class="map-desc">
+            Пекельна ущелина з розпеченою лавою. Коротші шляхи з крутими перехрестями, де критично важливе сповільнення магами.
+          </p>
+        </div>
+      </div>
+
+      <div style="font-size: 13px; color: var(--text-muted);">
+        Всього 25 хвиль. Хвилі 5, 10, 15, 20 та 25 — могутні боси!
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНЕ ВІКНО: ПОРАЗКА -->
+  <div class="modal-overlay" id="modal-defeat" style="display: none;">
+    <div class="modal-card">
+      <h2 class="modal-title game-over-title">💀 Вашу оборону прорвано!</h2>
+      <p class="modal-subtitle">Вороги дісталися серця королівства</p>
+
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="modal-stat-label">Хвиль витримано</span>
+          <span class="modal-stat-val" id="stat-defeat-waves">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="modal-stat-label">Вбито ворогів</span>
+          <span class="modal-stat-val" id="stat-defeat-kills">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="modal-stat-label">Збудовано веж</span>
+          <span class="modal-stat-val" id="stat-defeat-towers">0</span>
+        </div>
+      </div>
+
+      <button id="btn-retry" class="btn-action-large">Спробувати знову 🔄</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНЕ ВІКНО: ПЕРЕМОГА -->
+  <div class="modal-overlay" id="modal-victory" style="display: none;">
+    <div class="modal-card">
+      <h2 class="modal-title victory-title">👑 Величава Перемога!</h2>
+      <p class="modal-subtitle">Усі 25 хвиль відбито, Архідемона Руїни знищено, а королівство врятовано!</p>
+
+      <div class="modal-stats">
+        <div class="modal-stat-item">
+          <span class="modal-stat-label">Залишок життів</span>
+          <span class="modal-stat-val" id="stat-victory-lives" style="color: var(--accent-red);">20</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="modal-stat-label">Знищено ворогів</span>
+          <span class="modal-stat-val" id="stat-victory-kills">0</span>
+        </div>
+        <div class="modal-stat-item">
+          <span class="modal-stat-label">Фінальне золото</span>
+          <span class="modal-stat-val" id="stat-victory-gold" style="color: var(--accent-gold);">0</span>
+        </div>
+      </div>
+
+      <button id="btn-victory-restart" class="btn-action-large">Грати знову 🏆</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. ЗВУКОВА СИСТЕМА (СИНТЕЗ ЗВУКІВ ЧЕРЕЗ WEB AUDIO API БЕЗ ЗОВНІШНІХ ФАЙЛІВ)
+       ========================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      shootArrow() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
+
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch(e) {}
+      }
+
+      shootCannon() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.2);
+
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch(e) {}
+      }
+
+      shootMagic() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + 0.12);
+
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.14);
+        } catch(e) {}
+      }
+
+      explosion() {
+        if (this.muted || !this.ctx) return;
+        this.playTone(80, 'sawtooth', 0.25, 0.22);
+      }
+
+      enemyHit() {
+        this.playTone(280, 'sine', 0.04, 0.06);
+      }
+
+      enemyKill() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(660, now);
+          osc.frequency.setValueAtTime(880, now + 0.05);
+
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.15);
+        } catch(e) {}
+      }
+
+      build() {
+        this.playTone(440, 'triangle', 0.1, 0.15);
+      }
+
+      upgrade() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.08, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.08);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.08);
+          });
+        } catch(e) {}
+      }
+
+      sell() {
+        this.playTone(550, 'sine', 0.12, 0.12);
+      }
+
+      lifeLost() {
+        this.playTone(130, 'sawtooth', 0.35, 0.25);
+      }
+
+      waveStart() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [330, 440, 554, 659].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, now + idx * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.12);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.07);
+            osc.stop(now + idx * 0.07 + 0.12);
+          });
+        } catch(e) {}
+      }
+
+      bossSpawn() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(90, now);
+          osc.frequency.linearRampToValueAtTime(60, now + 0.6);
+
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.65);
+        } catch(e) {}
+      }
+
+      victory() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.12, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.35);
+          });
+        } catch(e) {}
+      }
+
+      defeat() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const notes = [392, 349.23, 311.13, 261.63];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.15, now + i * 0.14);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.14);
+            osc.stop(now + i * 0.14 + 0.25);
+          });
+        } catch(e) {}
+      }
+    }
+
+    const audio = new SoundEngine();
+
+    /* ==========================================================================
+      2. КОНФІГУРАЦІЯ БАШТ (6 ТИПІВ, ПО 4 РІВНІ В КОЖНІЙ)
+       ========================================================================== */
+    const TOWER_TYPES = {
+      ARCHER: {
+        id: 'ARCHER',
+        name: 'Стрілець',
+        icon: '🏹',
+        desc: 'Швидка одиночна стрільба далекобійними стрілами',
+        bulletSpeed: 520,
+        levels: [
+          { cost: 100, damage: 16, range: 135, rate: 0.60, upgradeCost: 80,  sellValue: 70,  color: '#38bdf8' },
+          { cost: 180, damage: 32, range: 155, rate: 0.50, upgradeCost: 140, sellValue: 125, color: '#0ea5e9' },
+          { cost: 320, damage: 62, range: 175, rate: 0.42, upgradeCost: 220, sellValue: 220, color: '#0284c7' },
+          { cost: 540, damage: 115,range: 200, rate: 0.32, upgradeCost: 0,   sellValue: 375, color: '#38bdf8' }
+        ]
+      },
+      CANNON: {
+        id: 'CANNON',
+        name: 'Гармата',
+        icon: '💣',
+        desc: 'Вибухові ядра з великим уроном по області (Splash)',
+        bulletSpeed: 340,
+        levels: [
+          { cost: 150, damage: 45, range: 115, rate: 1.50, splash: 48, upgradeCost: 120, sellValue: 105, color: '#f97316' },
+          { cost: 270, damage: 95, range: 130, rate: 1.35, splash: 60, upgradeCost: 200, sellValue: 190, color: '#ea580c' },
+          { cost: 470, damage: 175,range: 145, rate: 1.20, splash: 75, upgradeCost: 300, sellValue: 330, color: '#c2410c' },
+          { cost: 770, damage: 320,range: 165, rate: 1.00, splash: 95, upgradeCost: 0,   sellValue: 540, color: '#ef4444' }
+        ]
+      },
+      MAGE: {
+        id: 'MAGE',
+        name: 'Маг',
+        icon: '❄️',
+        desc: 'Крижані магічні згустки, які сповільнюють рух ворогів',
+        bulletSpeed: 420,
+        levels: [
+          { cost: 125, damage: 22, range: 125, rate: 1.05, slow: 0.38, slowDuration: 2.2, upgradeCost: 100, sellValue: 85,  color: '#c084fc' },
+          { cost: 225, damage: 45, range: 140, rate: 0.90, slow: 0.48, slowDuration: 2.6, upgradeCost: 175, sellValue: 155, color: '#a855f7' },
+          { cost: 400, damage: 82, range: 155, rate: 0.80, slow: 0.56, slowDuration: 3.0, freezeDuration: 0.55, upgradeCost: 260, sellValue: 280, color: '#9333ea' },
+          { cost: 660, damage: 145,range: 175, rate: 0.68, slow: 0.62, slowDuration: 3.5, freezeDuration: 0.9, upgradeCost: 0,   sellValue: 460, color: '#67e8f9' }
+        ]
+      },
+
+      // ------ НОВИЙ ТИП: СНАЙПЕР ------
+      // Величезна дальність, повільний постріл, максимальний урон.
+      // Рівень 4 (бонус): 30% шанс критичного пострілу (x2.5 урон), відображається спалахом.
+      SNIPER: {
+        id: 'SNIPER',
+        name: 'Снайпер',
+        icon: '🎯',
+        desc: 'Величезна дальність, повільний але нищівний постріл. Ідеальний проти босів',
+        bulletSpeed: 900,
+        levels: [
+          { cost: 175, damage: 85,  range: 240, rate: 3.50, upgradeCost: 140, sellValue: 120, color: '#84cc16' },
+          { cost: 315, damage: 180, range: 275, rate: 3.00, upgradeCost: 230, sellValue: 220, color: '#65a30d' },
+          { cost: 545, damage: 340, range: 310, rate: 2.50, upgradeCost: 340, sellValue: 380, color: '#4d7c0f' },
+          { cost: 885, damage: 580, range: 350, rate: 2.00, upgradeCost: 0,   sellValue: 620, color: '#bef264', critChance: 0.30 }
+        ]
+      },
+
+      // ------ НОВИЙ ТИП: ТЕСЛА ------
+      // Ланцюгова блискавка: вражає chainCount ворогів у ланцюзі у chainRange.
+      // Рівень 4 (бонус): кожен уражений ворог паралізується на 0.5 с.
+      TESLA: {
+        id: 'TESLA',
+        name: 'Тесла',
+        icon: '⚡',
+        desc: 'Ланцюгова блискавка вражає 3-5 ворогів поруч один за одним',
+        bulletSpeed: 0, // миттєвий удар (обробляється в shoot())
+        levels: [
+          { cost: 200, damage: 35,  range: 130, rate: 1.20, chainCount: 3, chainRange: 90,  upgradeCost: 160, sellValue: 140, color: '#facc15' },
+          { cost: 360, damage: 70,  range: 145, rate: 1.05, chainCount: 4, chainRange: 100, upgradeCost: 260, sellValue: 250, color: '#eab308' },
+          { cost: 620, damage: 125, range: 160, rate: 0.90, chainCount: 4, chainRange: 115, upgradeCost: 380, sellValue: 435, color: '#ca8a04' },
+          { cost: 1000,damage: 200, range: 175, rate: 0.75, chainCount: 5, chainRange: 130, upgradeCost: 0,   sellValue: 700, color: '#fde047', stunDuration: 0.5 }
+        ]
+      },
+
+      // ------ НОВИЙ ТИП: ОТРУЙНА ВЕЖА ------
+      // Накладає DoT-отруту: кілька тіків урону за певний інтервал.
+      // Рівень 4 (бонус): отрута також сповільнює ворога на 20%.
+      POISON: {
+        id: 'POISON',
+        name: 'Отруйна',
+        icon: '🧪',
+        desc: 'Плює отруйними кулями, що завдають урон з часом протягом кількох секунд',
+        bulletSpeed: 360,
+        levels: [
+          { cost: 140, damage: 8,  range: 120, rate: 1.30, dotTicks: 4, dotInterval: 0.8, upgradeCost: 110, sellValue: 98,  color: '#4ade80' },
+          { cost: 250, damage: 14, range: 135, rate: 1.10, dotTicks: 5, dotInterval: 0.7, upgradeCost: 190, sellValue: 175, color: '#22c55e' },
+          { cost: 440, damage: 24, range: 150, rate: 0.95, dotTicks: 6, dotInterval: 0.6, upgradeCost: 280, sellValue: 308, color: '#16a34a' },
+          { cost: 720, damage: 38, range: 165, rate: 0.80, dotTicks: 8, dotInterval: 0.5, upgradeCost: 0,   sellValue: 504, color: '#86efac', poisonSlow: 0.20 }
+        ]
+      }
+    };
+
+    /* ==========================================================================
+       3. КОНФІГУРАЦІЯ КАРТ (2 КАРТИ: ЗЕЛЕНА ДОЛИНА ТА ЛАВОВИЙ КАНЬЙОН)
+       ========================================================================== */
+    const MAP_DEFINITIONS = {
+      VALLEY: {
+        id: 'VALLEY',
+        name: 'Зелена долина',
+        difficulty: 'Нормальна',
+        cols: 25,
+        rows: 15,
+        theme: {
+          bg: '#1b4332',
+          grassDark: '#2d6a4f',
+          grassLight: '#40916c',
+          pathColor: '#d4a373',
+          pathBorder: '#a98467',
+          pathDetail: '#c49767',
+          water: '#1d4ed8'
+        },
+        // Точки повороту шляху (у координатах сітки X, Y)
+        pathPoints: [
+          { x: -0.5, y: 3 },
+          { x: 5, y: 3 },
+          { x: 5, y: 11 },
+          { x: 12, y: 11 },
+          { x: 12, y: 4 },
+          { x: 19, y: 4 },
+          { x: 19, y: 11 },
+          { x: 25.5, y: 11 }
+        ],
+        // Декоративні дерева та скелі
+        decorations: [
+          { type: 'tree', x: 2, y: 1 }, { type: 'tree', x: 8, y: 1 }, { type: 'tree', x: 16, y: 1 },
+          { type: 'tree', x: 2, y: 8 }, { type: 'tree', x: 9, y: 7 }, { type: 'tree', x: 16, y: 7 },
+          { type: 'tree', x: 22, y: 2 }, { type: 'tree', x: 22, y: 8 }, { type: 'tree', x: 15, y: 13 },
+          { type: 'rock', x: 3, y: 5 }, { type: 'rock', x: 8, y: 9 }, { type: 'rock', x: 17, y: 13 }
+        ]
+      },
+      LAVA: {
+        id: 'LAVA',
+        name: 'Лавовий каньйон',
+        difficulty: 'Складна',
+        cols: 25,
+        rows: 15,
+        theme: {
+          bg: '#181119',
+          grassDark: '#2b1a29',
+          grassLight: '#3d2539',
+          pathColor: '#b91c1c',
+          pathBorder: '#7f1d1d',
+          pathDetail: '#f97316',
+          lavaGlow: '#ea580c'
+        },
+        pathPoints: [
+          { x: 3, y: -0.5 },
+          { x: 3, y: 5 },
+          { x: 10, y: 5 },
+          { x: 10, y: 2 },
+          { x: 17, y: 2 },
+          { x: 17, y: 12 },
+          { x: 9, y: 12 },
+          { x: 9, y: 9 },
+          { x: 23, y: 9 },
+          { x: 23, y: 15.5 }
+        ],
+        decorations: [
+          { type: 'lavaVent', x: 1, y: 2 }, { type: 'lavaVent', x: 7, y: 3 }, { type: 'lavaVent', x: 20, y: 1 },
+          { type: 'lavaVent', x: 6, y: 7 }, { type: 'lavaVent', x: 14, y: 7 }, { type: 'lavaVent', x: 13, y: 14 },
+          { type: 'crystal', x: 14, y: 4 }, { type: 'crystal', x: 5, y: 10 }, { type: 'crystal', x: 20, y: 11 }
+        ]
+      }
+    };
+
+    /* ==========================================================================
+      4. КОНФІГУРАЦІЯ ХВИЛЬ ТА БОСІВ (25 ХВИЛЬ)
+       ========================================================================== */
+    // 3 Типи звичайних ворогів:
+    // - NORMAL: збалансований
+    // - FAST: висока швидкість, менше HP
+    // - TANK: повільний, високе HP
+    // 5 босових хвиль:
+    // - BOSS_1 (Хвиля 5): Кам'яний Голем - повільний, висока броня (40% поглинання урону)
+    // - BOSS_2 (Хвиля 10): Кривавий Владика - швидкий, регенерація здоров'я (120 HP/сек)
+    // - BOSS_3 (Хвиля 25): Архідемон Руїни - колосальне здоров'я, найвища броня
+
+    // Централізовані параметри легкої, нормальної та складної фаз. Межі 5 і 10
+    // закріплені за нормальним і складним етапами відповідно.
+    const DIFFICULTY_PHASES = [
+      { from: 1, to: 4, health: [0.78, 0.84], speed: [0.92, 0.97], enemies: [18, 20], killGold: [0.90, 0.98], waveGold: [0.90, 0.98], spawnDelay: [1.15, 1.00] },
+      { from: 5, to: 9, health: [1.00, 1.12], speed: [1.00, 1.04], enemies: [22, 25], killGold: [1.00, 1.08], waveGold: [1.00, 1.10], spawnDelay: [1.00, 0.92] },
+      { from: 10, to: 25, health: [1.18, 2.35], speed: [1.06, 1.32], enemies: [27, 40], killGold: [1.12, 1.55], waveGold: [1.12, 1.70], spawnDelay: [0.88, 0.68] }
+    ];
+
+    function getDifficulty(wave) {
+      const phase = DIFFICULTY_PHASES.find(item => wave >= item.from && wave <= item.to);
+      const progress = phase.to === phase.from ? 0 : (wave - phase.from) / (phase.to - phase.from);
+      const interpolate = values => values[0] + (values[1] - values[0]) * progress;
+      return {
+        healthMultiplier: interpolate(phase.health),
+        speedMultiplier: interpolate(phase.speed),
+        enemyCount: Math.round(interpolate(phase.enemies)),
+        killGoldMultiplier: interpolate(phase.killGold),
+        waveGoldMultiplier: interpolate(phase.waveGold),
+        spawnDelayMultiplier: interpolate(phase.spawnDelay)
+      };
+    }
+
+    function generateWaveConfig() {
+      const waves = [];
+
+      for (let w = 1; w <= 25; w++) {
+        let title = `Хвиля ${w}`;
+        let queue = [];
+        const difficulty = getDifficulty(w);
+        let reward = Math.round((45 + w * 8 + Math.pow(Math.max(0, w - 9), 1.25) * 2) * difficulty.waveGoldMultiplier);
+        let isBossWave = false;
+        let bossData = null;
+
+        // Queue values use base stats; phase multipliers are applied once at the end.
+        const hpScale = 1;
+
+        const totalMobs = difficulty.enemyCount;
+
+        if (w === 5) {
+          // БОС 1: Хвиля 5 - Кам'яний Голем (22 вороги всього)
+          isBossWave = true;
+          title = "ХВИЛЯ 5: БОС 1 — КАМ'ЯНИЙ ГОЛЕМ";
+          bossData = {
+            id: 'BOSS_1',
+            name: "Кам'яний Голем",
+            title: "Броньований Колос (Повільний, висока броня)",
+            maxHp: 2400,
+            speed: 36,
+            radius: 22,
+            reward: 180,
+            livesPenalty: 5,
+            armor: 0.40,
+            color: '#a8a29e',
+            coreColor: '#facc15'
+          };
+
+          // Авангард перед босом (4 танки)
+          for (let i = 0; i < 4; i++) {
+            queue.push({ type: 'TANK', delay: 0.7, hp: Math.round(160 * hpScale), speed: 45, reward: 16, radius: 14, color: '#64748b' });
+          }
+          // Спавн боса
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          // Супровід після боса до загальної кількості totalMobs
+          const remaining = totalMobs - 5;
+          for (let i = 0; i < remaining; i++) {
+            queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(60 * hpScale), speed: 64, reward: 12, radius: 11, color: '#22c55e' });
+          }
+        }
+        else if (w === 10) {
+          // БОС 2: Хвиля 10 - Кривавий Владика (27 ворогів всього)
+          isBossWave = true;
+          title = "ХВИЛЯ 10: БОС 2 — КРИВАВИЙ ВЛАДИКА";
+          bossData = {
+            id: 'BOSS_2',
+            name: "Кривавий Владика",
+            title: "Регенератор плоті (Швидкий, регенерує здоров'я)",
+            maxHp: 4800,
+            speed: 66,
+            radius: 20,
+            reward: 280,
+            livesPenalty: 7,
+            regenPerSec: 120,
+            color: '#dc2626',
+            coreColor: '#f43f5e'
+          };
+
+          for (let i = 0; i < 4; i++) {
+            queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(55 * hpScale), speed: 102, reward: 14, radius: 10, color: '#f59e0b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          const remaining = totalMobs - 5;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 2 === 0) {
+              queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(55 * hpScale), speed: 102, reward: 14, radius: 10, color: '#f59e0b' });
+            } else {
+              queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(200 * hpScale), speed: 46, reward: 22, radius: 14, color: '#64748b' });
+            }
+          }
+        }
+        else if (w === 15) {
+          // БОС: Хвиля 15 - Залізний Колосс (31 ворог всього)
+          isBossWave = true;
+          title = "ХВИЛЯ 15: БОС — ЗАЛІЗНИЙ КОЛОСС";
+          bossData = {
+            id: 'BOSS_1_EVO',
+            name: "Залізний Колосс",
+            title: "Непохитна Сталь (Надважка броня, повільний крок)",
+            maxHp: 8500,
+            speed: 34,
+            radius: 24,
+            reward: 380,
+            livesPenalty: 7,
+            armor: 0.45,
+            color: '#64748b',
+            coreColor: '#38bdf8'
+          };
+
+          for (let i = 0; i < 5; i++) {
+            queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(220 * hpScale), speed: 45, reward: 24, radius: 14, color: '#64748b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          const remaining = totalMobs - 6;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 3 === 0) {
+              queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(220 * hpScale), speed: 45, reward: 24, radius: 14, color: '#64748b' });
+            } else {
+              queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(65 * hpScale), speed: 105, reward: 16, radius: 10, color: '#f59e0b' });
+            }
+          }
+        }
+        else if (w === 20) {
+          // Посилена хвиля 20: два різні боси замість одного.
+          isBossWave = true;
+          title = "ХВИЛЯ 20: ПОДВІЙНИЙ БОС — АРХІВАМПІР І ЗАЛІЗНИЙ КОЛОСС";
+          bossData = {
+            id: 'BOSS_2_EVO',
+            name: "Архівампір Тіней",
+            title: "Володар Ночі (Надшвидкий, супер-регенерація)",
+            maxHp: 13000,
+            speed: 70,
+            radius: 22,
+            reward: 480,
+            livesPenalty: 10,
+            regenPerSec: 200,
+            color: '#9333ea',
+            coreColor: '#c084fc'
+          };
+          const secondBossData = {
+            id: 'BOSS_1_EVO',
+            name: 'Залізний Колосс',
+            title: 'Непохитна Сталь (Броньований бос)',
+            maxHp: 10500,
+            speed: 34,
+            radius: 24,
+            reward: 620,
+            livesPenalty: 8,
+            armor: 0.48,
+            color: '#64748b',
+            coreColor: '#38bdf8'
+          };
+
+          for (let i = 0; i < 6; i++) {
+            queue.push({ type: 'FAST', delay: 0.4, hp: Math.round(75 * hpScale), speed: 110, reward: 18, radius: 10, color: '#f59e0b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          queue.push({ type: 'BOSS', delay: 1.4, ...secondBossData });
+          const remaining = totalMobs - 8;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 2 === 0) {
+              queue.push({ type: 'FAST', delay: 0.4, hp: Math.round(75 * hpScale), speed: 110, reward: 18, radius: 10, color: '#f59e0b' });
+            } else {
+              queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(250 * hpScale), speed: 46, reward: 26, radius: 14, color: '#64748b' });
+            }
+          }
+        }
+        else if (w === 25) {
+          // Фінальна хвиля: найбільший запас здоров'я та броня серед босів.
+          isBossWave = true;
+          title = "ХВИЛЯ 25: ФІНАЛЬНИЙ БОС — АРХІДЕМОН РУЇНИ";
+          bossData = {
+            id: 'BOSS_3',
+            name: "Архідемон Руїни",
+            title: "Володар Кінця Світу (Найбільше HP, броня 55%)",
+            maxHp: 30000,
+            speed: 38,
+            radius: 28,
+            reward: 800,
+            livesPenalty: 20,
+            armor: 0.55,
+            color: '#7e22ce',
+            coreColor: '#e11d48'
+          };
+
+          // Авангард
+          for (let i = 0; i < 4; i++) {
+            queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(280 * hpScale), speed: 48, reward: 28, radius: 14, color: '#64748b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.4, ...bossData });
+          // Ескорт армії
+          const remaining = totalMobs - 5;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 3 === 0) {
+              queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(280 * hpScale), speed: 48, reward: 28, radius: 14, color: '#64748b' });
+            } else if (i % 3 === 1) {
+              queue.push({ type: 'FAST', delay: 0.38, hp: Math.round(85 * hpScale), speed: 115, reward: 20, radius: 10, color: '#f59e0b' });
+            } else {
+              queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(95 * hpScale), speed: 68, reward: 18, radius: 11, color: '#22c55e' });
+            }
+          }
+        }
+        else {
+          // Звичайні хвилі: склад і чисельність залежать від фази складності.
+          for (let i = 0; i < totalMobs; i++) {
+            const roll = Math.random();
+            if (w <= 2) {
+              // Хвилі 1-2: звичайні піхотинці
+              queue.push({
+                type: 'NORMAL',
+                delay: 0.55,
+                hp: Math.round(55 * hpScale),
+                speed: 62,
+                reward: 10 + Math.floor(w * 0.8),
+                radius: 11,
+                color: '#22c55e'
+              });
+            } else if (w <= 4) {
+              // Початок гри: переважно піхота з невеликою часткою бігунів.
+              if (roll < 0.6) {
+                queue.push({ type: 'NORMAL', delay: 0.55, hp: Math.round(65 * hpScale), speed: 64, reward: 11 + Math.floor(w * 0.8), radius: 11, color: '#22c55e' });
+              } else {
+                queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(42 * hpScale), speed: 96, reward: 10 + Math.floor(w * 0.8), radius: 9, color: '#f59e0b' });
+              }
+            } else if (w <= 9) {
+              // Нормальна фаза поступово вводить більше бігунів і танків.
+              if (roll < 0.50) {
+                queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(75 * hpScale), speed: 65, reward: 12 + Math.floor(w * 0.8), radius: 11, color: '#22c55e' });
+              } else if (roll < 0.80) {
+                queue.push({ type: 'FAST', delay: 0.4, hp: Math.round(50 * hpScale), speed: 100, reward: 11 + Math.floor(w * 0.8), radius: 9, color: '#f59e0b' });
+              } else {
+                queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(200 * hpScale), speed: 45, reward: 22 + Math.floor(w * 1.0), radius: 14, color: '#64748b' });
+              }
+            } else {
+              // Late waves favor tanks and runners; waves 20-25 are the densest.
+              const normalChance = w >= 20 ? 0.20 : 0.25;
+              const fastChance = w >= 20 ? 0.55 : 0.60;
+              if (roll < normalChance) {
+                queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(90 * hpScale), speed: 67, reward: 15 + Math.floor(w * 0.9), radius: 11, color: '#22c55e' });
+              } else if (roll < fastChance) {
+                queue.push({ type: 'FAST', delay: 0.38, hp: Math.round(65 * hpScale), speed: 104, reward: 15 + Math.floor(w * 0.9), radius: 9, color: '#f59e0b' });
+              } else {
+                queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(230 * hpScale), speed: 46, reward: 26 + Math.floor(w * 1.1), radius: 14, color: '#64748b' });
+              }
+            }
+          }
+        }
+
+        // Difficulty scales all queued units consistently, bosses included.
+        queue.forEach(enemy => {
+          if (Number.isFinite(enemy.hp)) enemy.hp = Math.max(1, Math.round(enemy.hp * difficulty.healthMultiplier));
+          if (Number.isFinite(enemy.maxHp)) enemy.maxHp = Math.max(1, Math.round(enemy.maxHp * difficulty.healthMultiplier));
+          if (Number.isFinite(enemy.speed)) enemy.speed = Math.max(1, Math.round(enemy.speed * difficulty.speedMultiplier * 10) / 10);
+          if (Number.isFinite(enemy.reward)) enemy.reward = Math.max(1, Math.round(enemy.reward * difficulty.killGoldMultiplier));
+          if (Number.isFinite(enemy.delay)) enemy.delay = Math.max(0.2, enemy.delay * difficulty.spawnDelayMultiplier);
+        });
+
+        waves.push({
+          waveNum: w,
+          title,
+          isBossWave,
+          reward,
+          queue
+        });
+      }
+
+      return waves;
+    }
+
+    /* ==========================================================================
+       5. КЛАСИ ДЛЯ ГРИ (ВОРОГИ, ВЕЖІ, СНАРЯДИ, ЧАСТИНКИ)
+       ========================================================================== */
+
+    // Клас частинок для вибухів, диму, іскор та тексту урону
+    class Particle {
+      constructor(x, y, vx, vy, color, life, size, isText = false, text = '') {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.life = life;
+        this.maxLife = life;
+        this.size = size;
+        this.isText = isText;
+        this.text = text;
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        if (!this.isText) {
+          this.vx *= 0.96;
+          this.vy *= 0.96;
+        } else {
+          this.vy -= 10 * dt; // Текст плавно спливає вгору
+        }
+        this.life -= dt;
+      }
+
+      draw(ctx) {
+        const alpha = Math.max(0, this.life / this.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        if (this.isText) {
+          ctx.font = `bold ${Math.round(this.size)}px sans-serif`;
+          ctx.fillStyle = this.color;
+          ctx.textAlign = 'center';
+          ctx.shadowColor = '#000';
+          ctx.shadowBlur = 4;
+          ctx.fillText(this.text, this.x, this.y);
+        } else {
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, Math.max(0.5, this.size * alpha), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Клас снарядів (Стріли, Гарматні ядра, Магічні кулі)
+    class Projectile {
+      constructor(type, x, y, target, damage, speed, options = {}) {
+        this.type = type;
+        this.x = x;
+        this.y = y;
+        this.startX = x;
+        this.startY = y;
+        this.target = target;
+        this.targetPos = { x: target.x, y: target.y };
+        this.damage = damage;
+        this.speed = speed;
+        this.options = options;
+        this.dead = false;
+
+        // Для параболічної траєкторії гармати
+        this.totalDist = Math.hypot(target.x - x, target.y - y);
+        this.distTraveled = 0;
+      }
+
+      update(dt, game) {
+        if (this.dead) return;
+
+        if (this.type === 'TESLA') {
+          this.hit(game);
+          return;
+        }
+
+        // Оновлюємо координату рухомої цілі для самонавідних стріл і магії
+        if (this.target && !this.target.dead) {
+          this.targetPos = { x: this.target.x, y: this.target.y };
+        }
+
+        const dx = this.targetPos.x - this.x;
+        const dy = this.targetPos.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        const step = this.speed * dt;
+
+        if (dist <= step || dist < 8) {
+          this.hit(game);
+          return;
+        }
+
+        this.x += (dx / dist) * step;
+        this.y += (dy / dist) * step;
+        this.distTraveled += step;
+
+        // Хвіст для снарядів
+        if (Math.random() < 0.6) {
+          let pColor = '#ffffff';
+          if (this.type === 'CANNON') pColor = '#f97316';
+          if (this.type === 'MAGE') pColor = '#67e8f9';
+          game.addParticle(this.x, this.y, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, pColor, 0.25, 2.5);
+        }
+      }
+
+      hit(game) {
+        this.dead = true;
+
+        if (this.type === 'ARCHER') {
+          audio.shootArrow();
+          if (this.target && !this.target.dead) {
+            this.target.takeDamage(this.damage, game, 'PHYSICAL');
+          }
+          for (let i = 0; i < 5; i++) {
+            game.addParticle(this.targetPos.x, this.targetPos.y, (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80, '#38bdf8', 0.25, 2.5);
+          }
+        }
+        else if (this.type === 'CANNON') {
+          audio.explosion();
+          // Урон по області (Splash)
+          const splash = this.options.splash || 60;
+          game.enemies.forEach(e => {
+            const d = Math.hypot(e.x - this.targetPos.x, e.y - this.targetPos.y);
+            if (d <= splash) {
+              const falloff = 1 - (d / splash) * 0.4; // 100% у центрі, 60% на краю
+              e.takeDamage(Math.round(this.damage * falloff), game, 'EXPLOSIVE');
+            }
+          });
+
+          // Ефект вибуху
+          for (let i = 0; i < 20; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 20 + Math.random() * 120;
+            const col = Math.random() > 0.4 ? '#f97316' : '#ef4444';
+            game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * spd, Math.sin(ang) * spd, col, 0.4, 4);
+          }
+        }
+        else if (this.type === 'MAGE') {
+          audio.enemyHit();
+          if (this.target && !this.target.dead) {
+            this.target.takeDamage(this.damage, game, 'MAGIC');
+            this.target.applySlow(this.options.slow || 0.4, this.options.slowDuration || 2.5);
+            if (this.options.freezeDuration) this.target.applyFreeze(this.options.freezeDuration);
+          }
+          // Спалах магії
+          for (let i = 0; i < 10; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 30 + Math.random() * 70;
+            game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * spd, Math.sin(ang) * spd, '#c084fc', 0.35, 3);
+          }
+        }
+        else if (this.type === 'SNIPER') {
+          // Снайперський постріл: великий урон, можливий крит на рівні 4
+          audio.shootArrow(); // Різкий звук
+          if (this.target && !this.target.dead) {
+            let dmg = this.damage;
+            let isCrit = false;
+            if (this.options.critChance && Math.random() < this.options.critChance) {
+              dmg = Math.round(dmg * 2.5);
+              isCrit = true;
+            }
+            this.target.takeDamage(dmg, game, 'PHYSICAL');
+            if (isCrit) {
+              // Золотий спалах критичного пострілу
+              for (let i = 0; i < 18; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * 100, Math.sin(ang) * 100, '#f59e0b', 0.5, 4);
+              }
+              game.addParticle(this.targetPos.x, this.targetPos.y - 20, 0, -40, '#fbbf24', 0.9, 16, true, `💥КРИТ!`);
+            } else {
+              for (let i = 0; i < 7; i++) {
+                game.addParticle(this.targetPos.x, this.targetPos.y, (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80, '#bef264', 0.3, 3);
+              }
+            }
+          }
+        }
+        else if (this.type === 'TESLA') {
+          // One chain tracks victims explicitly and stops safely if a hit kills its target.
+          const hitEnemies = new Set();
+          let current = this.target;
+          let previousPoint = { x: this.x, y: this.y };
+          for (let jump = 0; jump < this.options.chainCount && current && !current.dead; jump++) {
+            hitEnemies.add(current);
+            game.addLightningEffect(previousPoint, { x: current.x, y: current.y });
+            current.takeDamage(Math.max(1, Math.round(this.damage * Math.pow(0.78, jump))), game, 'MAGIC');
+            if (this.options.stunDuration) current.applyStun(this.options.stunDuration);
+            previousPoint = { x: current.x, y: current.y };
+            if (current.dead || jump === this.options.chainCount - 1) break;
+            const source = current;
+            current = game.enemies
+              .filter(enemy => !enemy.dead && !hitEnemies.has(enemy))
+              .map(enemy => ({ enemy, distance: Math.hypot(enemy.x - source.x, enemy.y - source.y) }))
+              .filter(candidate => candidate.distance <= this.options.chainRange)
+              .sort((a, b) => a.distance - b.distance)[0]?.enemy || null;
+          }
+        }
+        else if (this.type === 'POISON') {
+          // Отруйна куля: накладає DoT
+          audio.enemyHit();
+          if (this.target && !this.target.dead) {
+            const opts = this.options;
+            this.target.applyPoison(opts.dotDamage, opts.dotTicks, opts.dotInterval);
+            // Опційне сповільнення (рівень 4 бонус)
+            if (opts.poisonSlow) {
+              this.target.applySlow(opts.poisonSlow, opts.dotTicks * opts.dotInterval);
+            }
+            // Зелений хмарний ефект
+            for (let i = 0; i < 12; i++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = 15 + Math.random() * 55;
+              game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * spd, Math.sin(ang) * spd, '#4ade80', 0.55, 3.5);
+            }
+          }
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        if (this.type === 'ARCHER') {
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(-8, -2, 16, 4);
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.moveTo(8, -3);
+          ctx.lineTo(13, 0);
+          ctx.lineTo(8, 3);
+          ctx.fill();
+        }
+        else if (this.type === 'CANNON') {
+          ctx.fillStyle = '#1e293b';
+          ctx.strokeStyle = '#f97316';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        else if (this.type === 'MAGE') {
+          ctx.fillStyle = '#a855f7';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'SNIPER') {
+          // Довгий трасувальний слід снайперської кулі
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          // Слід (зеленувато-жовтий промінь)
+          const grad = ctx.createLinearGradient(-28, 0, 2, 0);
+          grad.addColorStop(0, 'rgba(190,242,100,0)');
+          grad.addColorStop(1, 'rgba(190,242,100,0.9)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(-28, -1.5, 30, 3);
+          // Куля
+          ctx.fillStyle = '#bef264';
+          ctx.shadowColor = '#84cc16';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(2, 0, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'POISON') {
+          // Зелена отруйна крапля
+          ctx.fillStyle = '#22c55e';
+          ctx.shadowColor = '#4ade80';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#86efac';
+          ctx.beginPath();
+          ctx.arc(this.x - 1.5, this.y - 1.5, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Клас ворогів (Звичайні, Швидкі, Танки та Боси)
+    class Enemy {
+      constructor(data, pathPixelPoints) {
+        this.type = data.type;
+        this.name = data.name || (data.type === 'NORMAL' ? 'Піхотинець' : (data.type === 'FAST' ? 'Бігун' : 'Танк'));
+        this.maxHp = data.hp || data.maxHp;
+        this.hp = this.maxHp;
+        this.speed = data.speed;
+        this.baseSpeed = data.speed;
+        this.reward = data.reward;
+        this.radius = data.radius || 12;
+        this.livesPenalty = data.livesPenalty || 1;
+        this.armor = data.armor || 0; // Броня: поглинання % урону
+        this.regenPerSec = data.regenPerSec || 0; // Регенерація HP
+        this.color = data.color || '#22c55e';
+        this.coreColor = data.coreColor || '#fff';
+        this.isBoss = data.type === 'BOSS';
+        this.bossId = data.id || null;
+
+        this.path = pathPixelPoints;
+        this.pathIndex = 0;
+        this.x = pathPixelPoints[0].x;
+        this.y = pathPixelPoints[0].y;
+        this.dead = false;
+        this.reachedEnd = false;
+
+        // Статуси
+        this.slowTimer = 0;
+        this.slowFactor = 0;
+        this.freezeTimer = 0;
+        this.animTimer = Math.random() * 10;
+
+        // Стан отрути (DoT від Отруйної вежі)
+        this.poisonTicks = 0;          // Кількість тіків, що залишилися
+        this.poisonDamagePerTick = 0;  // Урон на тік
+        this.poisonInterval = 0.7;     // Інтервал між тіками (сек)
+        this.poisonTimer = 0;          // Таймер до наступного тіку
+
+        // Стан паралічу (від Тесла рівень 4)
+        this.stunTimer = 0;
+      }
+
+      applySlow(factor, duration) {
+        if (factor > this.slowFactor || this.slowTimer <= 0) {
+          this.slowFactor = factor;
+          this.slowTimer = duration;
+        }
+      }
+
+      // Freeze is separate from slow so the brief stop is not diluted by movement modifiers.
+      applyFreeze(duration) {
+        if (!this.dead) this.freezeTimer = Math.max(this.freezeTimer, duration);
+      }
+
+      // Застосувати отруту (DoT) — підсумовує тіки, якщо нова отрута сильніша
+      applyPoison(damagePerTick, ticks, interval) {
+        if (this.dead) return;
+        if (damagePerTick >= this.poisonDamagePerTick || this.poisonTicks === 0) {
+          this.poisonDamagePerTick = damagePerTick;
+          this.poisonInterval = interval;
+        }
+        this.poisonTimer = this.poisonInterval;
+        this.poisonTicks = Math.max(this.poisonTicks, ticks);
+      }
+
+      // Застосувати паралізуючий удар (від Tesla L4)
+      applyStun(duration) {
+        this.stunTimer = Math.max(this.stunTimer, duration);
+      }
+
+      takeDamage(amount, game, damageType = 'PHYSICAL') {
+        if (this.dead || amount <= 0) return;
+        let finalDamage = amount;
+        if (this.armor > 0) {
+          finalDamage = Math.round(amount * (1 - this.armor));
+        }
+
+        this.hp -= finalDamage;
+
+        // Спливаючий текст урону
+        let txtColor = '#ffffff';
+        if (damageType === 'EXPLOSIVE') txtColor = '#f97316';
+        if (damageType === 'MAGIC') txtColor = '#c084fc';
+        if (damageType === 'POISON') txtColor = '#4ade80';
+        if (this.armor > 0) txtColor = '#94a3b8';
+
+        game.addParticle(
+          this.x + (Math.random() - 0.5) * 16,
+          this.y - 12,
+          (Math.random() - 0.5) * 10,
+          -30,
+          txtColor,
+          0.6,
+          11,
+          true,
+          `-${finalDamage}`
+        );
+
+        if (this.hp <= 0 && !this.dead) {
+          this.die(game);
+        }
+      }
+
+      die(game) {
+        this.dead = true;
+        audio.enemyKill();
+        game.gold += this.reward;
+        game.totalKills++;
+
+        // Текст золота
+        game.addParticle(this.x, this.y - 15, 0, -40, '#f59e0b', 0.8, 14, true, `+${this.reward}🪙`);
+
+        // Ефект спалаху частинок
+        for (let i = 0; i < (this.isBoss ? 35 : 12); i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 20 + Math.random() * (this.isBoss ? 160 : 70);
+          game.addParticle(this.x, this.y, Math.cos(ang) * spd, Math.sin(ang) * spd, this.color, 0.45, this.isBoss ? 5 : 3);
+        }
+      }
+
+      update(dt, game) {
+        if (this.dead) return;
+
+        this.animTimer += dt;
+
+        // Регенерація здоров'я (Бос 2)
+        if (this.regenPerSec > 0 && this.hp < this.maxHp) {
+          const heal = this.regenPerSec * dt;
+          this.hp = Math.min(this.maxHp, this.hp + heal);
+          if (Math.random() < 0.25) {
+            game.addParticle(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, 0, -25, '#22c55e', 0.4, 2);
+          }
+        }
+
+        // Розрахунок поточної швидкості зі сповільненням
+        let currentSpeed = this.baseSpeed;
+
+        if (this.freezeTimer > 0) {
+          this.freezeTimer = Math.max(0, this.freezeTimer - dt);
+          currentSpeed = 0;
+          if (Math.random() < 0.5) {
+            game.addParticle(this.x + (Math.random() - 0.5) * 18, this.y + (Math.random() - 0.5) * 18, 0, -18, '#7dd3fc', 0.35, 3);
+          }
+        }
+
+        // Параліч від Тесла (рівень 4)
+        if (this.stunTimer > 0) {
+          this.stunTimer -= dt;
+          currentSpeed = 0;
+          if (Math.random() < 0.4) {
+            game.addParticle(this.x + (Math.random() - 0.5) * 16, this.y + (Math.random() - 0.5) * 16, 0, -15, '#fde047', 0.25, 2);
+          }
+        }
+
+        if (this.slowTimer > 0) {
+          this.slowTimer -= dt;
+          currentSpeed *= (1 - this.slowFactor);
+          // Частинки льоду
+          if (Math.random() < 0.3) {
+            game.addParticle(this.x, this.y, 0, 10, '#38bdf8', 0.3, 2);
+          }
+        }
+
+        // Тіки отруєння (DoT від Отруйної вежі)
+        if (this.poisonTicks > 0) {
+          this.poisonTimer -= dt;
+          if (this.poisonTimer <= 0) {
+            this.poisonTimer = this.poisonInterval;
+            this.poisonTicks--;
+            this.takeDamage(this.poisonDamagePerTick, game, 'POISON');
+            if (this.dead) return;
+            // Зелені хмарки отрути
+            for (let i = 0; i < 4; i++) {
+              const ang = Math.random() * Math.PI * 2;
+              game.addParticle(this.x + Math.cos(ang) * 8, this.y + Math.sin(ang) * 8, Math.cos(ang) * 20, Math.sin(ang) * 20, '#4ade80', 0.5, 3);
+            }
+          }
+        }
+
+        // Рух уздовж шляху
+        if (this.pathIndex < this.path.length - 1) {
+          const target = this.path[this.pathIndex + 1];
+          const dx = target.x - this.x;
+          const dy = target.y - this.y;
+          const dist = Math.hypot(dx, dy);
+          const step = currentSpeed * dt;
+
+          if (dist <= step) {
+            this.x = target.x;
+            this.y = target.y;
+            this.pathIndex++;
+            if (this.pathIndex >= this.path.length - 1) {
+              this.reachExit(game);
+            }
+          } else {
+            this.x += (dx / dist) * step;
+            this.y += (dy / dist) * step;
+          }
+        }
+      }
+
+      reachExit(game) {
+        this.dead = true;
+        this.reachedEnd = true;
+        game.lives = Math.max(0, game.lives - this.livesPenalty);
+        audio.lifeLost();
+
+        game.addParticle(this.x, this.y - 20, 0, -45, '#ef4444', 1.0, 18, true, `-${this.livesPenalty} ❤️`);
+
+        // Тряска екрану при прориві боса
+        if (this.isBoss) {
+          game.shakeScreen(0.5);
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+
+        // Тінь
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y + this.radius * 0.75, this.radius, this.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Анімація дихання/кроку
+        const wobble = 1 + Math.sin(this.animTimer * 8) * 0.08;
+
+        // Основне тіло
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * wobble, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Poison is visible even between its damage ticks.
+        if (this.poisonTicks > 0) {
+          ctx.fillStyle = 'rgba(74, 222, 128, 0.22)';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 4 + Math.sin(this.animTimer * 5) * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.9)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#86efac';
+          ctx.beginPath();
+          ctx.arc(this.x + this.radius * 0.7, this.y - this.radius - 3 + Math.sin(this.animTimer * 4) * 2, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Специфічний вигляд залежно від типу
+        if (this.isBoss) {
+          // Зовнішнє сяйво та візерунок боса
+          ctx.strokeStyle = this.coreColor;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Очі боса
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(this.x - this.radius * 0.35, this.y - this.radius * 0.2, 3, 0, Math.PI * 2);
+          ctx.arc(this.x + this.radius * 0.35, this.y - this.radius * 0.2, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (this.bossId === 'BOSS_1' || this.bossId === 'BOSS_1_EVO') {
+            // Кам'яні / залізні щитки
+            ctx.fillStyle = this.bossId === 'BOSS_1_EVO' ? '#475569' : '#78716c';
+            ctx.fillRect(this.x - 8, this.y - 8, 16, 16);
+          } else if (this.bossId === 'BOSS_2' || this.bossId === 'BOSS_2_EVO') {
+            // Роги/Крила вампіра
+            ctx.strokeStyle = this.bossId === 'BOSS_2_EVO' ? '#9333ea' : '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(this.x - this.radius, this.y);
+            ctx.lineTo(this.x - this.radius - 8, this.y - 12);
+            ctx.moveTo(this.x + this.radius, this.y);
+            ctx.lineTo(this.x + this.radius + 8, this.y - 12);
+            ctx.stroke();
+          } else if (this.bossId === 'BOSS_3') {
+            // Архідемон: полум'яні роги та подвійне рунічне коло
+            ctx.strokeStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius + 5, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.radius + 8, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        } else if (this.type === 'FAST') {
+          // Гострі бічні крила
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y - this.radius - 2);
+          ctx.lineTo(this.x - this.radius, this.y + this.radius);
+          ctx.lineTo(this.x + this.radius, this.y + this.radius);
+          ctx.closePath();
+          ctx.fill();
+        } else if (this.type === 'TANK') {
+          // Броньований квадрат
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(this.x - this.radius * 0.7, this.y - this.radius * 0.7, this.radius * 1.4, this.radius * 1.4);
+        }
+
+        // Індикатор сповільнення (крижане кільце)
+        if (this.slowTimer > 0) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if (this.freezeTimer > 0) {
+          ctx.strokeStyle = '#bae6fd';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+
+        // Смужка здоров'я над головою
+        const barW = Math.max(24, this.radius * 2.2);
+        const barH = this.isBoss ? 6 : 4;
+        const barX = this.x - barW / 2;
+        const barY = this.y - this.radius - 10;
+        const hpPct = Math.max(0, this.hp / this.maxHp);
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        let barCol = '#22c55e';
+        if (hpPct < 0.3) barCol = '#ef4444';
+        else if (hpPct < 0.6) barCol = '#f59e0b';
+
+        ctx.fillStyle = barCol;
+        ctx.fillRect(barX, barY, barW * hpPct, barH);
+
+        ctx.restore();
+      }
+    }
+
+    // Клас Башти (Стрілець, Гармата, Маг з 4 рівнями прокачки)
+    class Tower {
+      constructor(typeId, gridCol, gridRow, tileSize) {
+        this.typeId = typeId;
+        this.col = gridCol;
+        this.row = gridRow;
+        this.tileSize = tileSize;
+        this.x = (gridCol + 0.5) * tileSize;
+        this.y = (gridRow + 0.5) * tileSize;
+        this.level = 1; // 1, 2, 3, 4
+        this.cooldown = 0;
+        this.target = null;
+        this.angle = 0;
+        this.investedGold = TOWER_TYPES[typeId].levels[0].cost;
+        this.animRecoil = 0;
+      }
+
+      getConfig() {
+        return TOWER_TYPES[this.typeId];
+      }
+
+      getLevelData() {
+        return this.getConfig().levels[this.level - 1];
+      }
+
+      getNextLevelData() {
+        return this.canUpgrade() ? this.getConfig().levels[this.level] : null;
+      }
+
+      canUpgrade() {
+        return this.level < 4;
+      }
+
+      getUpgradeCost() {
+        return this.canUpgrade() ? this.getLevelData().upgradeCost : 0;
+      }
+
+      getSellValue() {
+        return Math.round(this.investedGold * 0.7);
+      }
+
+      upgrade() {
+        if (!this.canUpgrade()) return false;
+        const cost = this.getUpgradeCost();
+        this.investedGold += cost;
+        this.level++;
+        return true;
+      }
+
+      update(dt, game) {
+        if (this.cooldown > 0) {
+          this.cooldown -= dt;
+        }
+
+        if (this.animRecoil > 0) {
+          this.animRecoil = Math.max(0, this.animRecoil - dt * 6);
+        }
+
+        const data = this.getLevelData();
+
+        // Пошук цілі в радіусі дії (пріоритет: перший ворог по шляху)
+        if (this.typeId === 'SNIPER' || !this.target || this.target.dead || Math.hypot(this.target.x - this.x, this.target.y - this.y) > data.range) {
+          this.findTarget(game.enemies, data.range);
+        }
+
+        if (this.target) {
+          const dx = this.target.x - this.x;
+          const dy = this.target.y - this.y;
+          this.angle = Math.atan2(dy, dx);
+
+          // Стрільба при готовності кулдауну
+          if (this.cooldown <= 0) {
+            this.shoot(game, data);
+            this.cooldown = data.rate;
+            this.animRecoil = 1;
+          }
+        }
+      }
+
+      findTarget(enemies, range) {
+        let bestEnemy = null;
+        let maxIndex = -1;
+
+        for (let i = 0; i < enemies.length; i++) {
+          const e = enemies[i];
+          if (e.dead) continue;
+          const d = Math.hypot(e.x - this.x, e.y - this.y);
+          if (d <= range) {
+            const bossPriority = this.typeId === 'SNIPER';
+            const bestIsBoss = bestEnemy && bestEnemy.isBoss;
+            const outranks = bossPriority
+              ? (!bestEnemy || (e.isBoss && !bestIsBoss) || (e.isBoss === bestIsBoss && e.maxHp > bestEnemy.maxHp) || (e.isBoss === bestIsBoss && e.maxHp === bestEnemy.maxHp && e.pathIndex > maxIndex))
+              : e.pathIndex > maxIndex;
+            if (outranks) {
+              maxIndex = e.pathIndex;
+              bestEnemy = e;
+            }
+          }
+        }
+        this.target = bestEnemy;
+      }
+
+      shoot(game, data) {
+        const cfg = this.getConfig();
+
+        if (this.typeId === 'ARCHER') {
+          audio.shootArrow();
+          game.projectiles.push(new Projectile('ARCHER', this.x, this.y, this.target, data.damage, cfg.bulletSpeed));
+        }
+        else if (this.typeId === 'CANNON') {
+          audio.shootCannon();
+          game.projectiles.push(new Projectile('CANNON', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { splash: data.splash }));
+        }
+        else if (this.typeId === 'MAGE') {
+          audio.shootMagic();
+          game.projectiles.push(new Projectile('MAGE', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { slow: data.slow, slowDuration: data.slowDuration, freezeDuration: data.freezeDuration }));
+        }
+        else if (this.typeId === 'SNIPER') {
+          // Keep the high-damage shot in flight so its tracer is visible.
+          game.projectiles.push(new Projectile('SNIPER', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { critChance: data.critChance }));
+        }
+        else if (this.typeId === 'TESLA') {
+          game.projectiles.push(new Projectile('TESLA', this.x, this.y, this.target, data.damage, 0, { chainCount: data.chainCount, chainRange: data.chainRange, stunDuration: data.stunDuration }));
+        }
+        else if (this.typeId === 'POISON') {
+          game.projectiles.push(new Projectile('POISON', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { dotDamage: data.damage, dotTicks: data.dotTicks, dotInterval: data.dotInterval, poisonSlow: data.poisonSlow }));
+        }
+      }
+
+      draw(ctx, isSelected) {
+        const data = this.getLevelData();
+        ctx.save();
+
+        // Підсвітка радіусу атаки, якщо вежу виділено
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, data.range, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Основа вежі (платформа зі стилем за рівнем)
+        const pad = 4;
+        const bX = this.col * this.tileSize + pad;
+        const bY = this.row * this.tileSize + pad;
+        const bSize = this.tileSize - pad * 2;
+
+        // Колір рамки залежно від рівня
+        const levelBorders = ['#475569', '#38bdf8', '#a855f7', '#f59e0b'];
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(bX, bY, bSize, bSize);
+        ctx.strokeStyle = isSelected ? '#fbbf24' : levelBorders[this.level - 1];
+        ctx.lineWidth = this.level >= 3 ? 2.5 : 1.5;
+        ctx.strokeRect(bX, bY, bSize, bSize);
+
+        // Малювання башти за типом та рівнем
+        ctx.translate(this.x, this.y);
+
+        if (this.typeId === 'ARCHER') {
+          // Базова турель
+          ctx.fillStyle = this.level === 4 ? '#0284c7' : '#475569';
+          ctx.beginPath();
+          ctx.arc(0, 0, 13 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Обертова частина
+          ctx.rotate(this.angle);
+          const recoil = -this.animRecoil * 5;
+
+          if (this.level === 1) {
+            // Одинарний арбалет
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(-4 + recoil, -2.5, 16, 5);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(10 + recoil, 0, 9, -Math.PI / 2.5, Math.PI / 2.5);
+            ctx.stroke();
+          } else if (this.level === 2) {
+            // Посилений сталевий арбалет
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(-5 + recoil, -3, 18, 6);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(11 + recoil, 0, 11, -Math.PI / 2.4, Math.PI / 2.4);
+            ctx.stroke();
+          } else if (this.level === 3) {
+            // Подвійний скорострільний арбалет
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(-6 + recoil, -6, 20, 4);
+            ctx.fillRect(-6 + recoil, 2, 20, 4);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(12 + recoil, -4, 8, -Math.PI / 3, Math.PI / 3);
+            ctx.arc(12 + recoil, 4, 8, -Math.PI / 3, Math.PI / 3);
+            ctx.stroke();
+          } else {
+            // Рівень 4: Легендарна небесна баліста
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-6 + recoil, -7, 22, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(0 + recoil, -3, 18, 6);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(14 + recoil, 0, 14, -Math.PI / 2.2, Math.PI / 2.2);
+            ctx.stroke();
+          }
+        }
+        else if (this.typeId === 'CANNON') {
+          // Масивна гармата
+          ctx.fillStyle = this.level === 4 ? '#450a0a' : '#1e293b';
+          ctx.beginPath();
+          ctx.arc(0, 0, 14 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.rotate(this.angle);
+          const recoil = -this.animRecoil * 7;
+
+          if (this.level === 1) {
+            // Чавунна мортира
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(-3 + recoil, -4.5, 17, 9);
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(12 + recoil, -3.5, 2.5, 7);
+          } else if (this.level === 2) {
+            // Бронзова облогова гармата
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-4 + recoil, -5.5, 20, 11);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(13 + recoil, -4.5, 3.5, 9);
+          } else if (this.level === 3) {
+            // Подвійна важка гармата
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-4 + recoil, -7, 21, 5.5);
+            ctx.fillRect(-4 + recoil, 1.5, 21, 5.5);
+            ctx.fillStyle = '#ea580c';
+            ctx.fillRect(14 + recoil, -6, 3, 4);
+            ctx.fillRect(14 + recoil, 2.5, 3, 4);
+          } else {
+            // Рівень 4: Пекельний бомбардир
+            ctx.fillStyle = '#7f1d1d';
+            ctx.fillRect(-5 + recoil, -8, 23, 16);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(15 + recoil, -6.5, 4, 13);
+            // Вогняне ядро
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(recoil, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        else if (this.typeId === 'MAGE') {
+          // Магічний шпиль
+          ctx.fillStyle = this.level === 4 ? '#2e1065' : '#3b0764';
+          ctx.beginPath();
+          ctx.arc(0, 0, 13 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Обертання/левітація кристалів
+          const time = Date.now() * 0.003;
+          const crystalSize = 6 + this.level * 2;
+
+          ctx.fillStyle = this.level === 4 ? '#67e8f9' : '#c084fc';
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 8 + this.level * 3;
+
+          // Центральний кристал
+          ctx.beginPath();
+          ctx.moveTo(0, -crystalSize);
+          ctx.lineTo(crystalSize * 0.7, 0);
+          ctx.lineTo(0, crystalSize);
+          ctx.lineTo(-crystalSize * 0.7, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Орбітальні руни для рівнів 2, 3, 4
+          if (this.level >= 2) {
+            const orbitR = 12 + this.level * 2;
+            const count = this.level;
+            for (let i = 0; i < count; i++) {
+              const ang = time + (i * Math.PI * 2) / count;
+              const ox = Math.cos(ang) * orbitR;
+              const oy = Math.sin(ang) * orbitR;
+              ctx.fillStyle = '#38bdf8';
+              ctx.beginPath();
+              ctx.arc(ox, oy, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          // The crystal brightens as its cooldown completes; facets vary by upgrade level.
+          const charge = Math.max(0, Math.min(1, 1 - this.cooldown / data.rate));
+          const glow = 7 + charge * 15 + (Math.sin(time * 5) + 1) * 2;
+          ctx.shadowColor = this.level >= 3 ? '#38bdf8' : '#c084fc';
+          ctx.shadowBlur = glow;
+          ctx.strokeStyle = this.level >= 3 ? '#bae6fd' : '#e9d5ff';
+          ctx.lineWidth = 1 + this.level * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(0, -crystalSize);
+          ctx.lineTo(crystalSize * 0.7, 0);
+          ctx.lineTo(0, crystalSize);
+          ctx.lineTo(-crystalSize * 0.7, 0);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          if (this.level >= 3 && charge > 0.75) {
+            ctx.globalAlpha = (charge - 0.75) * 2.5;
+            ctx.strokeStyle = '#7dd3fc';
+            ctx.beginPath();
+            ctx.arc(0, 0, crystalSize + 5 + Math.sin(time * 8) * 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+        else if (this.typeId === 'SNIPER') {
+          const colors = ['#84cc16', '#65a30d', '#4d7c0f', '#bef264'];
+          ctx.fillStyle = '#26351c';
+          ctx.beginPath();
+          ctx.arc(0, 0, 10 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.rotate(this.angle);
+          ctx.fillStyle = colors[this.level - 1];
+          ctx.fillRect(-7, -4, 19 + this.level, 8);
+          ctx.fillStyle = '#d9f99d';
+          ctx.fillRect(7 + this.level, -2, 10 + this.level * 2, 4);
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-3, 4, 4, 6);
+          if (this.level >= 3) {
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 13 + this.level, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+        else if (this.typeId === 'TESLA') {
+          const time = Date.now() * 0.006;
+          const coilColor = ['#facc15', '#eab308', '#ca8a04', '#fde047'][this.level - 1];
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-9, -8, 18, 16);
+          ctx.strokeStyle = coilColor;
+          ctx.lineWidth = 2 + this.level * 0.35;
+          ctx.shadowColor = coilColor;
+          ctx.shadowBlur = this.animRecoil > 0 ? 16 : 6;
+          ctx.beginPath();
+          ctx.moveTo(0, -7);
+          ctx.lineTo(0, -13 - this.level);
+          ctx.stroke();
+          for (let i = 0; i < this.level + 1; i++) {
+            const angle = time + i * Math.PI * 2 / (this.level + 1);
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * 10, Math.sin(angle) * 10, 3, 0, Math.PI * 2);
+            ctx.fillStyle = coilColor;
+            ctx.fill();
+          }
+          ctx.shadowBlur = 0;
+        }
+        else if (this.typeId === 'POISON') {
+          const poisonColor = ['#4ade80', '#22c55e', '#16a34a', '#86efac'][this.level - 1];
+          ctx.fillStyle = '#26352d';
+          ctx.beginPath();
+          ctx.arc(0, 2, 11 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#365b3e';
+          ctx.fillRect(-10, -4, 20, 12);
+          ctx.fillStyle = poisonColor;
+          ctx.shadowColor = '#4ade80';
+          ctx.shadowBlur = 5 + this.level * 2;
+          ctx.beginPath();
+          ctx.arc(0, -6, 4 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#dcfce7';
+          ctx.beginPath();
+          ctx.arc(-1, -8, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.restore();
+
+        // Зірочки рівня (1-4) над баштою
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        let starStr = '★'.repeat(this.level) + '☆'.repeat(4 - this.level);
+        ctx.fillText(starStr, this.x, this.row * this.tileSize + 11);
+      }
+    }
+
+    /* ==========================================================================
+       6. ГОЛОВНИЙ ДВИГУНЕЦЬ ГРИ
+       ========================================================================== */
+    class GameEngine {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        this.tileSize = 40; // 25 стовпців x 15 рядків = 1000 x 600 px
+        this.cols = 25;
+        this.rows = 15;
+
+        // Стан гри
+        this.state = 'MAP_SELECT'; // MAP_SELECT, PLAYING, PAUSED, GAME_OVER, VICTORY
+        this.currentMapId = 'VALLEY';
+        this.mapData = null;
+        this.grid = []; // 0: вільна земля, 1: шлях, 2: декорація/перешкода, 3: зайнято баштою
+        this.pathPixelPoints = [];
+
+        this.gold = 300;
+        this.lives = 20;
+        this.currentWaveIndex = 0;
+        this.waves = [];
+        this.isWaveInProgress = false;
+        this.skipCooldown = 0; // Затримка 30 секунд на кнопку skip
+
+        this.enemies = [];
+        this.towers = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.lightningEffects = [];
+
+        // Спавн поточної хвилі
+        this.spawnQueue = [];
+        this.spawnTimer = 0;
+
+        // Вибір гравця
+        this.selectedBuildType = 'ARCHER';
+        this.selectedTower = null;
+        this.hoverTile = null;
+
+        // Налаштування швидкості та тряски екрану
+        this.gameSpeed = 1; // 1, 2 або 3; усі режими використовують однакові підкроки симуляції.
+        this.screenShakeTime = 0;
+
+        // Статистика
+        this.totalKills = 0;
+        this.totalTowersBuilt = 0;
+
+        // Кешований фон карти для оптимізації рендерингу
+        this.bgCanvas = document.createElement('canvas');
+        this.bgCanvas.width = 1000;
+        this.bgCanvas.height = 600;
+        this.bgCtx = this.bgCanvas.getContext('2d');
+
+        this.initDOM();
+        this.renderMapPreviews();
+        this.initInputs();
+
+        // Запуск головного циклу
+        this.lastTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      initDOM() {
+        this.dom = {
+          gold: document.getElementById('gold-val'),
+          lives: document.getElementById('lives-val'),
+          wave: document.getElementById('wave-val'),
+          enemies: document.getElementById('enemies-val'),
+          btnSpeed: document.getElementById('btn-speed'),
+          btnPause: document.getElementById('btn-pause'),
+          btnSound: document.getElementById('btn-sound'),
+          btnRestart: document.getElementById('btn-restart'),
+          btnNextWave: document.getElementById('btn-next-wave'),
+          btnTopSkip: document.getElementById('btn-top-skip'),
+          bossBar: document.getElementById('boss-health-bar'),
+          bossTitle: document.getElementById('boss-title-text'),
+          bossHpText: document.getElementById('boss-hp-text'),
+          bossHpFill: document.getElementById('boss-hp-fill'),
+          waveAnnouncer: document.getElementById('wave-announcer'),
+          buildPanel: document.getElementById('build-panel'),
+          selectedPanel: document.getElementById('selected-tower-panel'),
+          inspectName: document.getElementById('inspect-name'),
+          inspectStars: document.getElementById('inspect-stars'),
+          inspectStats: document.getElementById('inspect-stats'),
+          btnUpgradeTower: document.getElementById('btn-upgrade-tower'),
+          upgradeCost: document.getElementById('upgrade-cost'),
+          btnSellTower: document.getElementById('btn-sell-tower'),
+          sellValue: document.getElementById('sell-value'),
+          btnCloseInspect: document.getElementById('btn-close-inspect'),
+          modalMapSelect: document.getElementById('modal-map-select'),
+          modalDefeat: document.getElementById('modal-defeat'),
+          modalVictory: document.getElementById('modal-victory'),
+          statDefeatWaves: document.getElementById('stat-defeat-waves'),
+          statDefeatKills: document.getElementById('stat-defeat-kills'),
+          statDefeatTowers: document.getElementById('stat-defeat-towers'),
+          statVictoryLives: document.getElementById('stat-victory-lives'),
+          statVictoryKills: document.getElementById('stat-victory-kills'),
+          statVictoryGold: document.getElementById('stat-victory-gold'),
+          btnRetry: document.getElementById('btn-retry'),
+          btnVictoryRestart: document.getElementById('btn-victory-restart')
+        };
+      }
+
+      shakeScreen(duration = 0.4) {
+        this.screenShakeTime = duration;
+      }
+
+      loadMap(mapId) {
+        audio.init();
+        this.currentMapId = mapId;
+        this.mapData = MAP_DEFINITIONS[mapId];
+
+        // Скидання параметрів гри
+        this.gold = 300;
+        this.lives = 20;
+        this.currentWaveIndex = 0;
+        this.totalKills = 0;
+        this.totalTowersBuilt = 0;
+        this.isWaveInProgress = false;
+        this.skipCooldown = 0;
+        this.enemies = [];
+        this.towers = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.lightningEffects = [];
+        this.selectedTower = null;
+        this.waves = generateWaveConfig();
+
+        // Створення сітки
+        this.grid = [];
+        for (let r = 0; r < this.rows; r++) {
+          this.grid[r] = [];
+          for (let c = 0; c < this.cols; c++) {
+            this.grid[r][c] = 0; // 0 = можна будувати
+          }
+        }
+
+        // Перетворення точок шляху на пікселі
+        this.pathPixelPoints = this.mapData.pathPoints.map(p => ({
+          x: (p.x + 0.5) * this.tileSize,
+          y: (p.y + 0.5) * this.tileSize
+        }));
+
+        // Розмітка шляху на сітці (заборона будівництва)
+        for (let i = 0; i < this.mapData.pathPoints.length - 1; i++) {
+          const p1 = this.mapData.pathPoints[i];
+          const p2 = this.mapData.pathPoints[i + 1];
+          const minX = Math.max(0, Math.floor(Math.min(p1.x, p2.x)));
+          const maxX = Math.min(this.cols - 1, Math.ceil(Math.max(p1.x, p2.x)));
+          const minY = Math.max(0, Math.floor(Math.min(p1.y, p2.y)));
+          const maxY = Math.min(this.rows - 1, Math.ceil(Math.max(p1.y, p2.y)));
+
+          for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+              this.grid[y][x] = 1; // 1 = шлях
+            }
+          }
+        }
+
+        // Розмітка перешкод
+        if (this.mapData.decorations) {
+          this.mapData.decorations.forEach(d => {
+            if (d.x >= 0 && d.x < this.cols && d.y >= 0 && d.y < this.rows) {
+              if (this.grid[d.y][d.x] === 0) {
+                this.grid[d.y][d.x] = 2; // 2 = перешкода
+              }
+            }
+          });
+        }
+
+        // Передрендеринг статичного фону карти
+        this.preRenderBackground();
+
+        this.state = 'PLAYING';
+        this.dom.modalMapSelect.style.display = 'none';
+        this.dom.modalDefeat.style.display = 'none';
+        this.dom.modalVictory.style.display = 'none';
+
+        this.updateUI();
+        this.selectBuildCard('ARCHER');
+      }
+
+      preRenderBackground() {
+        const ctx = this.bgCtx;
+        const th = this.mapData.theme;
+
+        ctx.fillStyle = th.bg;
+        ctx.fillRect(0, 0, 1000, 600);
+
+        // Малювання клітинок землі з легким шаховим візерунком
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const isAlt = (r + c) % 2 === 0;
+            ctx.fillStyle = isAlt ? th.grassDark : th.grassLight;
+            ctx.fillRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+
+            // Тонка сітка
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          }
+        }
+
+        // Малювання дороги / річки лави
+        ctx.lineWidth = this.tileSize * 0.9;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Зовнішній бордюр шляху
+        ctx.strokeStyle = th.pathBorder;
+        ctx.beginPath();
+        this.pathPixelPoints.forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        // Внутрішнє полотно шляху
+        ctx.lineWidth = this.tileSize * 0.72;
+        ctx.strokeStyle = th.pathColor;
+        ctx.beginPath();
+        this.pathPixelPoints.forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        // Декоративні деталі на карті
+        if (this.mapData.decorations) {
+          this.mapData.decorations.forEach(d => {
+            const cx = (d.x + 0.5) * this.tileSize;
+            const cy = (d.y + 0.5) * this.tileSize;
+
+            if (d.type === 'tree') {
+              // Зелене дерево
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+              ctx.beginPath();
+              ctx.ellipse(cx, cy + 12, 14, 8, 0, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#065f46';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#10b981';
+              ctx.beginPath();
+              ctx.arc(cx - 3, cy - 3, 10, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            else if (d.type === 'rock') {
+              // Камінь
+              ctx.fillStyle = '#475569';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#64748b';
+              ctx.beginPath();
+              ctx.arc(cx - 2, cy - 2, 7, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            else if (d.type === 'lavaVent') {
+              // Гейзер лави
+              ctx.fillStyle = '#1c1917';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#ea580c';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            else if (d.type === 'crystal') {
+              // Магматичний кристал
+              ctx.fillStyle = '#f43f5e';
+              ctx.beginPath();
+              ctx.moveTo(cx, cy - 12);
+              ctx.lineTo(cx + 8, cy + 8);
+              ctx.lineTo(cx - 8, cy + 8);
+              ctx.closePath();
+              ctx.fill();
+            }
+          });
+        }
+      }
+
+      renderMapPreviews() {
+        ['VALLEY', 'LAVA'].forEach(id => {
+          const map = MAP_DEFINITIONS[id];
+          const canvas = document.getElementById(id === 'VALLEY' ? 'preview-valley' : 'preview-lava');
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          const scaleX = canvas.width / (25 * 40);
+          const scaleY = canvas.height / (15 * 40);
+
+          ctx.fillStyle = map.theme.bg;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          ctx.strokeStyle = map.theme.pathColor;
+          ctx.lineWidth = 14 * scaleX;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          map.pathPoints.forEach((p, idx) => {
+            const px = (p.x + 0.5) * 40 * scaleX;
+            const py = (p.y + 0.5) * 40 * scaleY;
+            if (idx === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.stroke();
+        });
+      }
+
+      initInputs() {
+        // Клік по картках вибору карти
+        document.querySelectorAll('.map-select-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const mapId = card.getAttribute('data-map');
+            this.loadMap(mapId);
+          });
+        });
+
+        // Клік по кнопках вибору башт
+        document.querySelectorAll('.tower-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const type = card.getAttribute('data-type');
+            this.selectBuildCard(type);
+          });
+        });
+
+        // Кнопка наступної хвилі
+        this.dom.btnNextWave.addEventListener('click', () => {
+          this.startNextWave();
+        });
+
+        // Швидкість
+        this.dom.btnSpeed.addEventListener('click', () => {
+          this.gameSpeed = this.gameSpeed === 3 ? 1 : this.gameSpeed + 1;
+          this.dom.btnSpeed.textContent = `x${this.gameSpeed}`;
+          this.dom.btnSpeed.title = `Швидкість гри x${this.gameSpeed} (натисніть, щоб змінити)`;
+          this.dom.btnSpeed.classList.toggle('active', this.gameSpeed > 1);
+        });
+
+        // Пауза
+        this.dom.btnPause.addEventListener('click', () => {
+          if (this.state === 'PLAYING') {
+            this.state = 'PAUSED';
+            this.dom.btnPause.textContent = '▶';
+            this.dom.btnPause.classList.add('active');
+          } else if (this.state === 'PAUSED') {
+            this.state = 'PLAYING';
+            this.dom.btnPause.textContent = '⏸';
+            this.dom.btnPause.classList.remove('active');
+          }
+        });
+
+        // Звук
+        this.dom.btnSound.addEventListener('click', () => {
+          audio.init();
+          audio.muted = !audio.muted;
+          this.dom.btnSound.textContent = audio.muted ? '🔇' : '🔊';
+          this.dom.btnSound.classList.toggle('active', !audio.muted);
+        });
+
+        // Рестарт / Зміна карти
+        this.dom.btnRestart.addEventListener('click', () => {
+          this.state = 'MAP_SELECT';
+          this.dom.modalMapSelect.style.display = 'flex';
+          this.dom.modalDefeat.style.display = 'none';
+          this.dom.modalVictory.style.display = 'none';
+        });
+
+        this.dom.btnRetry.addEventListener('click', () => {
+          this.loadMap(this.currentMapId);
+        });
+
+        this.dom.btnVictoryRestart.addEventListener('click', () => {
+          this.state = 'MAP_SELECT';
+          this.dom.modalMapSelect.style.display = 'flex';
+          this.dom.modalVictory.style.display = 'none';
+        });
+
+        // Панель інспекції башти
+        this.dom.btnUpgradeTower.addEventListener('click', () => {
+          if (this.selectedTower && this.selectedTower.canUpgrade()) {
+            const cost = this.selectedTower.getUpgradeCost();
+            if (this.gold >= cost) {
+              this.gold -= cost;
+              this.selectedTower.upgrade();
+              audio.upgrade();
+              this.updateInspectPanel();
+              this.updateUI();
+            }
+          }
+        });
+
+        this.dom.btnSellTower.addEventListener('click', () => {
+          if (this.selectedTower) {
+            const val = this.selectedTower.getSellValue();
+            this.gold += val;
+            audio.sell();
+            this.grid[this.selectedTower.row][this.selectedTower.col] = 0;
+            this.towers = this.towers.filter(t => t !== this.selectedTower);
+            this.selectedTower = null;
+            this.updateInspectPanel();
+            this.updateUI();
+          }
+        });
+
+        this.dom.btnCloseInspect.addEventListener('click', () => {
+          this.selectedTower = null;
+          this.updateInspectPanel();
+        });
+
+        // Взаємодія з полотном мишею та дотиком
+        const getCanvasCoords = (e) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : (e.clientX || 0);
+          const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : (e.clientY || 0);
+          const scaleX = this.canvas.width / rect.width;
+          const scaleY = this.canvas.height / rect.height;
+          return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+          };
+        };
+
+        this.canvas.addEventListener('mousemove', (e) => {
+          const pos = getCanvasCoords(e);
+          const col = Math.floor(pos.x / this.tileSize);
+          const row = Math.floor(pos.y / this.tileSize);
+          if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
+            this.hoverTile = { col, row };
+          } else {
+            this.hoverTile = null;
+          }
+        });
+
+        this.canvas.addEventListener('mouseleave', () => {
+          this.hoverTile = null;
+        });
+
+        this.canvas.addEventListener('click', (e) => {
+          audio.init();
+          const pos = getCanvasCoords(e);
+          const col = Math.floor(pos.x / this.tileSize);
+          const row = Math.floor(pos.y / this.tileSize);
+          this.handleCanvasClick(col, row);
+        });
+
+        // Підтримка мобільних тач-подій (touchstart / touchend)
+        this.canvas.addEventListener('touchstart', (e) => {
+          const pos = getCanvasCoords(e);
+          const col = Math.floor(pos.x / this.tileSize);
+          const row = Math.floor(pos.y / this.tileSize);
+          if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
+            this.hoverTile = { col, row };
+          }
+        }, { passive: true });
+
+        this.canvas.addEventListener('touchend', (e) => {
+          if (e.changedTouches && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const fakeEvent = {
+              clientX: touch.clientX,
+              clientY: touch.clientY,
+              touches: []
+            };
+            audio.init();
+            const pos = getCanvasCoords(fakeEvent);
+            const col = Math.floor(pos.x / this.tileSize);
+            const row = Math.floor(pos.y / this.tileSize);
+            this.handleCanvasClick(col, row);
+            setTimeout(() => { this.hoverTile = null; }, 500);
+          }
+        });
+
+        // Кнопка Skip зверху
+        if (this.dom.btnTopSkip) {
+          this.dom.btnTopSkip.addEventListener('click', (e) => {
+            this.handleSkipClick(e);
+          });
+        }
+
+        // Клавіатурні скорочення
+        window.addEventListener('keydown', (e) => {
+          if (e.key === '1') this.selectBuildCard('ARCHER');
+          if (e.key === '2') this.selectBuildCard('CANNON');
+          if (e.key === '3') this.selectBuildCard('MAGE');
+          if (e.code === 'Space') {
+            e.preventDefault();
+            if (!this.isWaveInProgress) {
+              this.startNextWave();
+            } else {
+              this.dom.btnPause.click();
+            }
+          }
+          if (e.key === 'Enter' || e.key === 'n' || e.key === 'N') {
+            e.preventDefault();
+            this.handleSkipClick(e);
+          }
+          if (e.key === 'u' || e.key === 'U' || e.key === 'г' || e.key === 'Г') {
+            this.dom.btnUpgradeTower.click();
+          }
+          if (e.key === 's' || e.key === 'S' || e.key === 'і' || e.key === 'І') {
+            this.dom.btnSellTower.click();
+          }
+          if (e.key === 'Escape') {
+            this.selectedTower = null;
+            this.updateInspectPanel();
+          }
+        });
+      }
+
+      handleSkipClick(e) {
+        if (this.skipCooldown > 0) return;
+        if (this.currentWaveIndex >= 25 && !this.isWaveInProgress) return;
+        audio.init();
+
+        if (!this.isWaveInProgress) {
+          // Якщо хвиля ще не розпочалась — негайно запускаємо її
+          this.startNextWave();
+        } else {
+          // ПРОПУСКАЄМО ПОТОЧНУ ХВИЛЮ ТА ВМИКАЄМО ЗАТРИМКУ 30 СЕКУНД
+          // 1. Знищуємо/очищаємо всіх ворогів поточної хвилі
+          this.enemies.forEach(en => {
+            en.dead = true;
+          });
+          this.enemies = [];
+          this.spawnQueue = [];
+          this.isWaveInProgress = false;
+
+          // 2. Нараховуємо нагороду за пройдену хвилю
+          const currentWave = this.waves[this.currentWaveIndex - 1];
+          const waveReward = currentWave ? currentWave.reward : 50;
+          this.gold += waveReward;
+
+          audio.upgrade();
+          this.addParticle(500, 180, 0, -40, '#f59e0b', 1.2, 18, true, `Хвилю ${this.currentWaveIndex} пропущено! +${waveReward}🪙`);
+
+          // 3. Вмикаємо затримку 30 секунд на кнопку SKIP
+          this.skipCooldown = 30.0;
+          if (this.dom.btnTopSkip) {
+            this.dom.btnTopSkip.textContent = '⏳ SKIP (30с)';
+            this.dom.btnTopSkip.disabled = true;
+          }
+
+          // 4. Перевіряємо умови завершення гри
+          this.checkGameEnd();
+
+          // 5. Автоматично запускаємо наступну хвилю через 0.6с, якщо гра триває
+          if (this.state === 'PLAYING' && this.currentWaveIndex < 25) {
+            setTimeout(() => {
+              if (this.state === 'PLAYING' && !this.isWaveInProgress) {
+                this.startNextWave();
+              }
+            }, 600);
+          }
+        }
+        this.updateUI();
+      }
+
+      selectBuildCard(type) {
+        this.selectedBuildType = type;
+        this.selectedTower = null;
+        this.updateInspectPanel();
+
+        document.querySelectorAll('.tower-card').forEach(c => {
+          c.classList.toggle('selected', c.getAttribute('data-type') === type);
+        });
+      }
+
+      handleCanvasClick(col, row) {
+        if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return;
+
+        // Перевіряємо, чи там вже стоїть башта
+        const existingTower = this.towers.find(t => t.col === col && t.row === row);
+        if (existingTower) {
+          this.selectedTower = existingTower;
+          this.updateInspectPanel();
+          return;
+        }
+
+        // Якщо клікнули на вільне місце (grid == 0) — будуємо башту
+        if (this.grid[row][col] === 0 && this.selectedBuildType) {
+          const cfg = TOWER_TYPES[this.selectedBuildType];
+          const cost = cfg.levels[0].cost;
+
+          if (this.gold >= cost) {
+            this.gold -= cost;
+            const newTower = new Tower(this.selectedBuildType, col, row, this.tileSize);
+            this.towers.push(newTower);
+            this.grid[row][col] = 3; // 3 = зайнято баштою
+            this.totalTowersBuilt++;
+            audio.build();
+
+            // Спалах частинок пилу
+            for (let i = 0; i < 8; i++) {
+              this.addParticle((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize, (Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50, '#94a3b8', 0.3, 3);
+            }
+
+            this.selectedTower = newTower;
+            this.updateInspectPanel();
+            this.updateUI();
+          } else {
+            // Бракує золота
+            this.addParticle((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize - 10, 0, -30, '#ef4444', 0.6, 13, true, 'Бракує золота!');
+          }
+        } else {
+          // Клік по дорозі або перешкоді знімає вибір
+          this.selectedTower = null;
+          this.updateInspectPanel();
+        }
+      }
+
+      updateInspectPanel() {
+        if (!this.selectedTower) {
+          this.dom.selectedPanel.style.display = 'none';
+          this.dom.buildPanel.style.display = 'flex';
+          return;
+        }
+
+        this.dom.buildPanel.style.display = 'none';
+        this.dom.selectedPanel.style.display = 'flex';
+
+        const t = this.selectedTower;
+        const cfg = t.getConfig();
+        const curData = t.getLevelData();
+        const nextData = t.getNextLevelData();
+
+        this.dom.inspectName.textContent = `${cfg.name} (Рівень ${t.level} / 4)`;
+        this.dom.inspectStars.textContent = '★'.repeat(t.level) + '☆'.repeat(4 - t.level);
+
+        let specialText = '';
+        if (t.typeId === 'CANNON') specialText = ` | Сплеш: ${curData.splash}px`;
+        if (t.typeId === 'MAGE') specialText = ` | Сповільнення: ${Math.round(curData.slow * 100)}%${curData.freezeDuration ? `, замороження: ${curData.freezeDuration}с` : ''}`;
+        if (t.typeId === 'SNIPER') specialText = ` | Пріоритет: бос / найбільше HP${curData.critChance ? `, крит: ${Math.round(curData.critChance * 100)}%` : ''}`;
+        if (t.typeId === 'TESLA') specialText = ` | Стрибки: ${curData.chainCount}, дальність ланцюга: ${curData.chainRange}px`;
+        if (t.typeId === 'POISON') specialText = ` | Отрута: ${curData.dotTicks} тік. × ${curData.dotInterval}с`;
+
+        let statLine = `Шкода: ${curData.damage} | Радіус: ${curData.range} | Швидкість: ${curData.rate}с${specialText}`;
+        if (nextData) {
+          statLine += ` (Наст. рівень: ⚔️${nextData.damage} 🎯${nextData.range} ⚡${nextData.rate}с)`;
+        }
+        this.dom.inspectStats.textContent = statLine;
+
+        if (t.canUpgrade()) {
+          const cost = t.getUpgradeCost();
+          this.dom.btnUpgradeTower.disabled = this.gold < cost;
+          this.dom.upgradeCost.textContent = cost;
+          this.dom.btnUpgradeTower.style.display = 'inline-flex';
+        } else {
+          this.dom.btnUpgradeTower.style.display = 'none'; // Максимальний рівень досягнуто
+        }
+
+        this.dom.sellValue.textContent = t.getSellValue();
+      }
+
+      updateUI() {
+        this.dom.gold.textContent = this.gold;
+        this.dom.lives.textContent = this.lives;
+        this.dom.wave.textContent = `${this.currentWaveIndex} / 25`;
+        this.dom.enemies.textContent = this.enemies.length + this.spawnQueue.length;
+
+        // Кнопка Skip зверху
+        if (this.dom.btnTopSkip) {
+          this.dom.btnTopSkip.disabled = (this.currentWaveIndex >= 25 && !this.isWaveInProgress);
+        }
+
+        // Оновлення стану кнопок вибору башт за золотом
+        document.querySelectorAll('.tower-card').forEach(card => {
+          const type = card.getAttribute('data-type');
+          const cost = TOWER_TYPES[type].levels[0].cost;
+          card.classList.toggle('disabled', this.gold < cost);
+        });
+
+        // Кнопка хвилі
+        if (this.isWaveInProgress) {
+          this.dom.btnNextWave.disabled = true;
+          this.dom.btnNextWave.classList.remove('highlight');
+          this.dom.btnNextWave.textContent = `Хвиля ${this.currentWaveIndex} триває...`;
+        } else {
+          this.dom.btnNextWave.disabled = false;
+          this.dom.btnNextWave.classList.add('highlight');
+          const nextNum = this.currentWaveIndex + 1;
+          if (nextNum <= 25) {
+            let label = `▶ Почати хвилю ${nextNum}`;
+            if (nextNum === 5) label = `⚠️ Хвиля 5: БОС 1 (Голем)!`;
+            if (nextNum === 10) label = `⚠️ Хвиля 10: БОС 2 (Владика)!`;
+            if (nextNum === 15) label = `⚠️ Хвиля 15: БОС (Колос)!`;
+            if (nextNum === 20) label = `⚠️ Хвиля 20: БОС (Архівампір)!`;
+            if (nextNum === 25) label = `💀 ХВИЛЯ 25: ФІНАЛЬНИЙ БОС!`;
+            this.dom.btnNextWave.textContent = label;
+          } else {
+            this.dom.btnNextWave.textContent = '🏆 Королівство врятовано!';
+            this.dom.btnNextWave.disabled = true;
+          }
+        }
+
+        if (this.selectedTower) {
+          this.updateInspectPanel();
+        }
+      }
+
+      startNextWave() {
+        if (this.isWaveInProgress || this.currentWaveIndex >= 25) return;
+
+        audio.init();
+        this.currentWaveIndex++;
+        const wave = this.waves[this.currentWaveIndex - 1];
+        this.isWaveInProgress = true;
+
+        // Копіюємо чергу спавну
+        this.spawnQueue = [...wave.queue];
+        this.spawnTimer = 0.5;
+
+        // Оповіщення хвилі
+        this.showWaveAnnouncer(wave.title, wave.isBossWave);
+
+        if (wave.isBossWave) {
+          audio.bossSpawn();
+        } else {
+          audio.waveStart();
+        }
+
+        this.updateUI();
+      }
+
+      showWaveAnnouncer(text, isBoss = false) {
+        this.dom.waveAnnouncer.textContent = text;
+        this.dom.waveAnnouncer.style.borderColor = isBoss ? 'var(--accent-red)' : 'var(--accent-gold)';
+        this.dom.waveAnnouncer.style.color = isBoss ? 'var(--accent-red)' : 'var(--accent-gold)';
+        this.dom.waveAnnouncer.classList.add('show');
+        setTimeout(() => {
+          this.dom.waveAnnouncer.classList.remove('show');
+        }, 2200);
+      }
+
+      addParticle(x, y, vx, vy, color, life, size, isText = false, text = '') {
+        this.particles.push(new Particle(x, y, vx, vy, color, life, size, isText, text));
+      }
+
+      // Store each Tesla arc briefly; randomized midpoints produce the lightning zigzag.
+      addLightningEffect(start, end) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const length = Math.hypot(dx, dy) || 1;
+        const points = [{ x: start.x, y: start.y }];
+        const segments = 5;
+        for (let i = 1; i < segments; i++) {
+          const progress = i / segments;
+          const offset = (Math.random() - 0.5) * Math.min(18, length * 0.18);
+          points.push({
+            x: start.x + dx * progress - (dy / length) * offset,
+            y: start.y + dy * progress + (dx / length) * offset
+          });
+        }
+        points.push({ x: end.x, y: end.y });
+        this.lightningEffects.push({ points, life: 0.16, maxLife: 0.16 });
+      }
+
+      checkGameEnd() {
+        if (this.lives <= 0 && this.state === 'PLAYING') {
+          this.state = 'GAME_OVER';
+          audio.defeat();
+          this.dom.statDefeatWaves.textContent = Math.max(0, this.currentWaveIndex - 1);
+          this.dom.statDefeatKills.textContent = this.totalKills;
+          this.dom.statDefeatTowers.textContent = this.totalTowersBuilt;
+          this.dom.modalDefeat.style.display = 'flex';
+          this.dom.bossBar.style.display = 'none';
+        }
+
+        if (this.currentWaveIndex === 25 && !this.isWaveInProgress && this.enemies.length === 0 && this.state === 'PLAYING') {
+          this.state = 'VICTORY';
+          audio.victory();
+          this.dom.statVictoryLives.textContent = this.lives;
+          this.dom.statVictoryKills.textContent = this.totalKills;
+          this.dom.statVictoryGold.textContent = this.gold;
+          this.dom.modalVictory.style.display = 'flex';
+          this.dom.bossBar.style.display = 'none';
+        }
+      }
+
+      update(dt) {
+        if (this.state !== 'PLAYING') return;
+
+        // Спавн ворогів черги
+        if (this.spawnQueue.length > 0) {
+          this.spawnTimer -= dt;
+          if (this.spawnTimer <= 0) {
+            const nextEnemyData = this.spawnQueue.shift();
+            this.enemies.push(new Enemy(nextEnemyData, this.pathPixelPoints));
+            this.spawnTimer = nextEnemyData.delay || 0.7;
+          }
+        }
+
+        // Оновлення ворогів
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+          const e = this.enemies[i];
+          e.update(dt, this);
+          if (e.dead) {
+            this.enemies.splice(i, 1);
+          }
+        }
+
+        // Оновлення веж
+        this.towers.forEach(t => t.update(dt, this));
+
+        // Оновлення снарядів
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+          const p = this.projectiles[i];
+          p.update(dt, this);
+          if (p.dead) {
+            this.projectiles.splice(i, 1);
+          }
+        }
+
+        // Оновлення частинок
+        this.lightningEffects = this.lightningEffects.filter(effect => {
+          effect.life -= dt;
+          return effect.life > 0;
+        });
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const pt = this.particles[i];
+          pt.update(dt);
+          if (pt.life <= 0) {
+            this.particles.splice(i, 1);
+          }
+        }
+
+        // Перевірка завершення хвилі
+        if (this.isWaveInProgress && this.spawnQueue.length === 0 && this.enemies.length === 0) {
+          this.isWaveInProgress = false;
+          const wave = this.waves[this.currentWaveIndex - 1];
+          this.gold += wave.reward;
+          this.addParticle(500, 300, 0, -40, '#f59e0b', 1.2, 18, true, `Хвилю пройдено! +${wave.reward}🪙`);
+          this.updateUI();
+        }
+
+        // Оновлення панелі боса вгорі полотна
+        const activeBoss = this.enemies.find(e => e.isBoss);
+        if (activeBoss) {
+          this.dom.bossBar.style.display = 'flex';
+          this.dom.bossTitle.textContent = `БОС: ${activeBoss.name.toUpperCase()}`;
+          this.dom.bossHpText.textContent = `${Math.max(0, Math.round(activeBoss.hp))} / ${activeBoss.maxHp}`;
+          const pct = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
+          this.dom.bossHpFill.style.width = `${pct}%`;
+        } else {
+          this.dom.bossBar.style.display = 'none';
+        }
+
+        this.checkGameEnd();
+      }
+
+      draw() {
+        const ctx = this.ctx;
+        ctx.save();
+
+        // Ефект тремтіння екрану
+        if (this.screenShakeTime > 0) {
+          const shakeAmt = 5;
+          ctx.translate((Math.random() - 0.5) * shakeAmt, (Math.random() - 0.5) * shakeAmt);
+        }
+
+        // 1. Малювання статичного кешованого фону карти
+        ctx.drawImage(this.bgCanvas, 0, 0);
+
+        // 2. Підсвітка клітинки під курсором миші / пальцем
+        if (this.hoverTile && this.state === 'PLAYING') {
+          const { col, row } = this.hoverTile;
+          const isValid = this.grid[row][col] === 0;
+          ctx.fillStyle = isValid ? 'rgba(34, 197, 94, 0.28)' : 'rgba(239, 68, 68, 0.28)';
+          ctx.fillRect(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize);
+          ctx.strokeStyle = isValid ? '#22c55e' : '#ef4444';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize);
+
+          // Попередній перегляд радіусу вежі при наведенні
+          if (isValid && this.selectedBuildType && !this.selectedTower) {
+            const range = TOWER_TYPES[this.selectedBuildType].levels[0].range;
+            ctx.beginPath();
+            ctx.arc((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize, range, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+
+        // 3. Малювання башт
+        this.towers.forEach(t => {
+          t.draw(ctx, t === this.selectedTower);
+        });
+
+        // 4. Малювання ворогів
+        this.enemies.forEach(e => {
+          e.draw(ctx);
+        });
+
+        // 5. Малювання снарядів
+        this.projectiles.forEach(p => {
+          p.draw(ctx);
+        });
+
+        // Tesla arcs glow briefly above units and below floating damage text.
+        this.lightningEffects.forEach(effect => {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, effect.life / effect.maxLife);
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 4;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 13;
+          ctx.beginPath();
+          effect.points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
+          ctx.stroke();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.shadowBlur = 0;
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // 6. Малювання частинок та тексту
+        this.particles.forEach(pt => {
+          pt.draw(ctx);
+        });
+
+        ctx.restore();
+      }
+
+      loop(timestamp) {
+        const rawDt = (timestamp - this.lastTime) / 1000;
+        this.lastTime = timestamp;
+
+        // Cap real frame time, then split accelerated time into small simulation steps.
+        const simulationDt = Math.min(rawDt, 0.1) * this.gameSpeed;
+        const maxStep = 1 / 60;
+        const stepCount = Math.max(1, Math.ceil(simulationDt / maxStep - 1e-9));
+        const dt = Math.min(simulationDt / stepCount, maxStep);
+
+        if (this.screenShakeTime > 0) {
+          this.screenShakeTime = Math.max(0, this.screenShakeTime - simulationDt);
+        }
+
+        for (let step = 0; step < stepCount; step++) this.update(dt);
+        this.draw();
+
+        // Оновлюємо лічильники UI
+        if (this.state === 'PLAYING') {
+          this.dom.enemies.textContent = this.enemies.length + this.spawnQueue.length;
+        }
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+    }
+
+    // Запуск гри після завантаження сторінки
+    window.addEventListener('DOMContentLoaded', () => {
+      window.game = new GameEngine();
+    });
+  </script>
+</body>
+</html>
