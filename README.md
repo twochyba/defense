@@ -1,6 +1,10 @@
 # Tower Defense Simulator (TDS): Оновлення «Військовий порт» ⚓🛳️
 
-Повноцінна стратегічна гра в жанрі **Tower Defense Simulator (TDS)**, створена в одному самодостатньому файлі [`index.html`](file:///c:/Users/black.KAKULCA/OneDrive/Документи/GitHub/defense/index.html) на чистому веб-стеку (HTML5 + CSS3 + Canvas API + Web Audio API).
+Стратегічна гра в жанрі **Tower Defense Simulator (TDS)** на HTML5, CSS3, Canvas API та Web Audio API. Основний код — у [index.html](index.html), графіка й рендерер порту — у папці [assets](assets/images/README.md). Для запуску та публікації копіюйте їх разом.
+
+Порт використовує згенеровані спрайти десантного катера, есмінця, субмарини й авіаносця; текстури води та бетону; контейнери, склади, цистерни, радари, маяк і кран. Кораблі плавно повертаються за маршрутом, мають кільватерний слід, а радари й сигнальні вогні анімовані. Статична карта кешується, ресурси завантажуються один раз. Нові морські WebP-файли займають приблизно 126 КіБ.
+
+Перевірка в Chrome або Edge без npm-залежностей: `node tests/naval-art.cjs`. Джерела та промпти: [assets/images/naval/README.md](assets/images/naval/README.md).
 
 ---
 

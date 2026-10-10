@@ -726,7 +726,10 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: radial-gradient(circle at 50% 30%, #172033 0%, #0c111d 60%, #060911 100%);
+      background: #0c111d;
+      background-image: linear-gradient(rgba(6, 9, 17, 0.35), rgba(6, 9, 17, 0.8)), url('assets/images/naval-menu.webp');
+      background-size: cover;
+      background-position: center;
       z-index: 1000;
       display: flex;
       flex-direction: column;
@@ -1100,6 +1103,25 @@
 
     .modal-wide {
       max-width: 960px !important;
+    }
+
+    #modal-units .modal-military-card {
+      background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.94)), url('assets/images/armory.webp');
+      background-size: cover;
+      background-position: center;
+    }
+
+    @media (max-width: 800px) {
+      #main-menu-overlay {
+        background-image: linear-gradient(rgba(6, 9, 17, 0.35), rgba(6, 9, 17, 0.8)), url('assets/images/naval-menu-small.webp');
+      }
+      #modal-units .modal-military-card {
+        background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.94)), url('assets/images/armory-small.webp');
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .menu-radar-bg::after { animation: none; }
     }
 
     .modal-header-flex {
@@ -2436,6 +2458,7 @@
     </div>
   </div>
 
+  <script src="assets/naval-art.js"></script>
   <script>
     /* ==========================================================================
        1. ЗВУКОВА СИСТЕМА (СИНТЕЗ ЗВУКІВ ЧЕРЕЗ WEB AUDIO API БЕЗ ЗОВНІШНІХ ФАЙЛІВ)
@@ -3370,7 +3393,7 @@
           { type: 'container', x: 9,  y: 10, colorIdx: 2 },
           { type: 'container', x: 10, y: 10, colorIdx: 0 },
           // Склади (великі прямокутники)
-          { type: 'warehouse', x: 2,  y: 10 },
+          { type: 'warehouse', x: 4,  y: 10 },
           { type: 'warehouse', x: 17, y: 9 },
           // Радарні вежі
           { type: 'radar', x: 21, y: 2 },
@@ -3381,9 +3404,10 @@
           // Військовий корабель на рейді (декорація)
           { type: 'warship', x: 2, y: 2 },
           // Маяк
-          { type: 'lighthouse', x: 1, y: 12 },
+          { type: 'lighthouse', x: 4, y: 13 },
+          { type: 'crane', x: 4, y: 8 },
           // Хвильорізи
-          { type: 'buoy', x: 3, y: 7 }, { type: 'buoy', x: 8, y: 4 }
+          { type: 'buoy', x: 3, y: 7 }, { type: 'buoy', x: 3, y: 9 }
         ]
       }
     };
@@ -4292,6 +4316,8 @@
 
         this.path = pathPixelPoints;
         this.pathIndex = 0;
+        this.heading = 0;
+        this.navalSprite = NavalArt.shipTypes[this.bossId || this.type];
         this.x = pathPixelPoints[0].x;
         this.y = pathPixelPoints[0].y;
         this.dead = false;
@@ -4657,6 +4683,10 @@
           const dy = target.y - this.y;
           const dist = Math.hypot(dx, dy);
           const step = currentSpeed * dt;
+          if (dist > 0 && step > 0) {
+            const turn = Math.atan2(dy, dx) - this.heading;
+            this.heading += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 8);
+          }
 
           if (dist <= step) {
             this.x = target.x;
@@ -4690,19 +4720,26 @@
         ctx.save();
 
         // Тінь
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        ctx.beginPath();
-        ctx.ellipse(this.x, this.y + this.radius * 0.75, this.radius, this.radius * 0.45, 0, 0, Math.PI * 2);
-        ctx.fill();
+        if (!this.navalSprite || !NavalArt.images[this.navalSprite]) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(this.x, this.y + this.radius * 0.75, this.radius, this.radius * 0.45, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // Анімація дихання/кроку
         const wobble = 1 + Math.sin(this.animTimer * 8) * 0.08;
 
         // Основне тіло
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius * wobble, 0, Math.PI * 2);
-        ctx.fill();
+        const navalSpriteDrawn = this.navalSprite && NavalArt.ship(ctx, this.navalSprite,
+          this.x, this.y, this.radius, this.heading, this.animTimer, this.isSubmerged,
+          this.freezeTimer <= 0 && this.stunTimer <= 0 && this.speed > 0);
+        if (!navalSpriteDrawn) {
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius * wobble, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // Poison is visible even between its damage ticks.
         if (this.poisonTicks > 0) {
@@ -4720,7 +4757,9 @@
         }
 
         // Специфічний вигляд залежно від типу
-        if (this.isBoss) {
+        if (navalSpriteDrawn) {
+          // Status rings and the health bar below apply to sprites too.
+        } else if (this.isBoss) {
           // Зовнішнє сяйво та візерунок боса
           ctx.strokeStyle = this.coreColor;
           ctx.lineWidth = 3;
@@ -4956,7 +4995,7 @@
         const barW = Math.max(24, this.radius * 2.2);
         const barH = this.isBoss ? 6 : 4;
         const barX = this.x - barW / 2;
-        const barY = this.y - this.radius - 10;
+        const barY = this.y - this.radius * (navalSpriteDrawn ? 1.55 : 1) - 10;
         const hpPct = Math.max(0, this.hp / this.maxHp);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -5239,9 +5278,13 @@
         const bSize = this.tileSize - pad * 2;
 
         // Колір рамки залежно від рівня
-        const levelBorders = ['#475569', '#38bdf8', '#a855f7', '#f59e0b'];
+        const levelBorders = ['#475569', '#38bdf8', '#a855f7', '#f59e0b', '#fbbf24'];
         ctx.fillStyle = '#1e293b';
         ctx.fillRect(bX, bY, bSize, bSize);
+        const platformTexture = NavalArt.images[this.typeId === 'ROCKET_BOAT' ? 'water' : 'concrete'];
+        if (platformTexture && ['COASTAL_GUN', 'ROCKET_BOAT', 'SEA_DRONE'].includes(this.typeId)) {
+          ctx.drawImage(platformTexture, bX, bY, bSize, bSize);
+        }
         ctx.strokeStyle = isSelected ? '#fbbf24' : levelBorders[this.level - 1];
         ctx.lineWidth = this.level >= 3 ? 2.5 : 1.5;
         ctx.strokeRect(bX, bY, bSize, bSize);
@@ -5571,13 +5614,15 @@
           const colors = ['#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#7dd3fc'];
           // Корпус катера
           ctx.rotate(this.angle);
-          ctx.fillStyle = '#0f172a';
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 14 + this.level, 8, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = colors[this.level - 1];
-          ctx.lineWidth = 2;
-          ctx.stroke();
+          if (!NavalArt.sprite(ctx, 'destroyer', 0, 0, 32 + this.level * 2, 26)) {
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 14 + this.level, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = colors[this.level - 1];
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
 
           // Ракетні контейнери (блоки)
           ctx.fillStyle = colors[this.level - 1];
@@ -5889,10 +5934,15 @@
         this.bgCanvas.width = 1000;
         this.bgCanvas.height = 600;
         this.bgCtx = this.bgCanvas.getContext('2d');
+        this.navalTime = 0;
 
         this.initDOM();
         this.renderMapPreviews();
         this.initInputs();
+        NavalArt.load().then(() => {
+          if (this.mapData?.isNavalMap) this.preRenderBackground();
+          this.renderMapPreviews();
+        });
 
         // Запуск головного циклу
         this.lastTime = performance.now();
@@ -6004,6 +6054,15 @@
           }
         }
 
+        // Open sea is visible water and cannot hold land towers.
+        if (this.mapData.isNavalMap) {
+          for (let row = 0; row < this.rows; row++) {
+            for (let col = 0; col < 4; col++) {
+              if (this.grid[row][col] === 0) this.grid[row][col] = 2;
+            }
+          }
+        }
+
         // Розмітка перешкод
         if (this.mapData.decorations) {
           this.mapData.decorations.forEach(d => {
@@ -6038,6 +6097,10 @@
       preRenderBackground() {
         const ctx = this.bgCtx;
         const th = this.mapData.theme;
+        if (this.mapData.isNavalMap) {
+          NavalArt.background(ctx, this.mapData);
+          return;
+        }
 
         ctx.fillStyle = th.bg;
         ctx.fillRect(0, 0, 1000, 600);
@@ -6149,105 +6212,6 @@
               ctx.closePath();
               ctx.fill();
             }
-            // ===== ДЕКОРАЦІЇ ПОРТУ =====
-            else if (d.type === 'container') {
-              // Вантажний морський контейнер
-              const cColors = ['#dc2626', '#2563eb', '#f59e0b', '#16a34a'];
-              const col = cColors[d.colorIdx % cColors.length];
-              ctx.fillStyle = col;
-              ctx.fillRect(cx - 16, cy - 10, 32, 20);
-              ctx.strokeStyle = '#0f172a';
-              ctx.lineWidth = 1.5;
-              ctx.strokeRect(cx - 16, cy - 10, 32, 20);
-              // Ребра жорсткості контейнера
-              ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-              ctx.lineWidth = 1;
-              for (let line = -10; line <= 10; line += 5) {
-                ctx.beginPath();
-                ctx.moveTo(cx + line, cy - 9);
-                ctx.lineTo(cx + line, cy + 9);
-                ctx.stroke();
-              }
-            }
-            else if (d.type === 'warehouse') {
-              // Великий військовий склад (ангар)
-              ctx.fillStyle = '#334155';
-              ctx.fillRect(cx - 18, cy - 14, 36, 28);
-              ctx.strokeStyle = '#475569';
-              ctx.lineWidth = 2;
-              ctx.strokeRect(cx - 18, cy - 14, 36, 28);
-              // Ворота ангара
-              ctx.fillStyle = '#1e293b';
-              ctx.fillRect(cx - 8, cy + 2, 16, 12);
-              // Дах
-              ctx.fillStyle = '#64748b';
-              ctx.beginPath();
-              ctx.moveTo(cx - 18, cy - 14);
-              ctx.lineTo(cx, cy - 20);
-              ctx.lineTo(cx + 18, cy - 14);
-              ctx.closePath();
-              ctx.fill();
-            }
-            else if (d.type === 'radar') {
-              // Радарна антена військової бази
-              ctx.fillStyle = '#475569';
-              ctx.fillRect(cx - 4, cy, 8, 14);
-              // Обертова тарілка
-              ctx.strokeStyle = '#38bdf8';
-              ctx.lineWidth = 2.5;
-              ctx.beginPath();
-              ctx.arc(cx, cy - 4, 10, -Math.PI / 1.5, Math.PI / 3);
-              ctx.stroke();
-              ctx.fillStyle = '#ef4444';
-              ctx.beginPath();
-              ctx.arc(cx, cy - 4, 2.5, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            else if (d.type === 'tank') {
-              // Паливна цистерна
-              ctx.fillStyle = '#e2e8f0';
-              ctx.beginPath();
-              ctx.arc(cx, cy, 12, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.strokeStyle = '#94a3b8';
-              ctx.lineWidth = 2;
-              ctx.stroke();
-              // Знак вогненебезпечно
-              ctx.fillStyle = '#ef4444';
-              ctx.beginPath();
-              ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            else if (d.type === 'warship') {
-              // Військовий корабель на рейді
-              ctx.fillStyle = '#1e293b';
-              ctx.beginPath();
-              ctx.ellipse(cx, cy, 18, 9, 0, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.strokeStyle = '#38bdf8';
-              ctx.lineWidth = 1.5;
-              ctx.stroke();
-              ctx.fillStyle = '#475569';
-              ctx.fillRect(cx - 6, cy - 4, 12, 8);
-            }
-            else if (d.type === 'buoy') {
-              // Морський сигнальний буй з миготливим вогнем
-              ctx.fillStyle = '#ef4444';
-              ctx.beginPath();
-              ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.fillStyle = '#fbbf24';
-              ctx.beginPath();
-              ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
-              ctx.fill();
-            }
-            else if (d.type === 'portTree') {
-              // Дерево на базі
-              ctx.fillStyle = '#0f766e';
-              ctx.beginPath();
-              ctx.arc(cx, cy, 10, 0, Math.PI * 2);
-              ctx.fill();
-            }
           });
         }
       }
@@ -6260,6 +6224,13 @@
           const ctx = canvas.getContext('2d');
           const scaleX = canvas.width / (25 * 40);
           const scaleY = canvas.height / (15 * 40);
+          if (map.isNavalMap) {
+            ctx.save();
+            ctx.scale(scaleX, scaleY);
+            NavalArt.background(ctx, map);
+            ctx.restore();
+            return;
+          }
 
           ctx.fillStyle = map.theme.bg;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -6983,6 +6954,7 @@
 
         // 1. Малювання статичного кешованого фону карти
         ctx.drawImage(this.bgCanvas, 0, 0);
+        if (this.mapData?.isNavalMap) NavalArt.harborLights(ctx, this.mapData, this.navalTime);
 
         // 2. Підсвітка клітинки під курсором миші / пальцем
         if (this.hoverTile && this.state === 'PLAYING') {
@@ -7070,6 +7042,7 @@
         const maxStep = 1 / 60;
         const stepCount = Math.max(1, Math.ceil(simulationDt / maxStep - 1e-9));
         const dt = Math.min(simulationDt / stepCount, maxStep);
+        if (this.state === 'PLAYING') this.navalTime += simulationDt;
 
         if (this.screenShakeTime > 0) {
           this.screenShakeTime = Math.max(0, this.screenShakeTime - simulationDt);
