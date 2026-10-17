@@ -76,7 +76,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const result = await evaluate(`(() => {
     const check = (value, message) => { if (!value) throw new Error(message); };
     check(Object.keys(NavalArt.images).length === 12, 'Not all twelve images loaded');
-    check(Object.keys(GameArt.images).length === 3, 'Generated art did not load');
+    check(Object.keys(GameArt.images).length === 6, 'Generated art did not load');
     check(getComputedStyle(document.body).margin === '0px', 'External stylesheet did not load');
     const game = window.game;
     const random = Math.random;
@@ -277,8 +277,56 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   })()`);
   const energyScreenshot = await send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(os.tmpdir(), 'defense-energy-mobile-preview.png'), Buffer.from(energyScreenshot.data, 'base64'));
+  const sizes = [[320,740], [390,844], [768,1024], [1024,768], [1440,900], [844,390]];
+  for (const [width, height] of sizes) {
+    await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 600 });
+    await evaluate(`(() => {
+      const check = (v, text) => { if (!v) throw new Error(text); };
+      const game = window.game;
+      game.loadMap('VALLEY');
+      const canvas = window.game.canvas.getBoundingClientRect();
+      check(Math.abs(canvas.width / canvas.height - 5 / 3) < 0.01, 'Canvas is stretched');
+      check(document.documentElement.scrollWidth <= innerWidth + 1, 'Battle layout overflows the screen');
+      game.selectBuildCard('POWER_PLANT');
+      game.canvas.dispatchEvent(new MouseEvent('click', {
+        clientX: canvas.left + 300 / 1000 * canvas.width,
+        clientY: canvas.top + 180 / 600 * canvas.height
+      }));
+      check(game.towers.some(t => t.typeId === 'POWER_PLANT' && t.col === 7 && t.row === 4), 'Scaled canvas click hit the wrong cell');
+      game.state = 'PAUSED';
+      document.getElementById('btn-nav-units').click();
+      const grid = document.getElementById('unit-cards-grid');
+      const panel = document.querySelector('#modal-units .modal-card');
+      check(grid.querySelectorAll('.unit-art').length === TDS_UNITS_CONFIG.length, 'Missing unit portraits');
+      check(grid.scrollHeight <= grid.clientHeight + 1, 'Unit grid has a nested scrollbar');
+      check(panel.scrollWidth <= panel.clientWidth + 1, 'Unit menu overflows horizontally');
+      const detail = document.getElementById('unit-detail-panel');
+      check(detail.scrollHeight <= detail.clientHeight + 1, 'Inspector has a nested scrollbar');
+      document.getElementById('btn-main-play').click();
+      const modes = document.querySelector('#modal-mode-select .modal-card');
+      check(modes.scrollWidth <= modes.clientWidth + 1, 'Difficulty menu overflows horizontally');
+      check(document.querySelectorAll('.mode-art').length === 3, 'Missing difficulty artwork');
+    })()`);
+    if ([390, 1440].includes(width)) {
+      await delay(150);
+      const modes = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(path.join(os.tmpdir(), 'defense-modes-' + width + '.png'), Buffer.from(modes.data, 'base64'));
+      await evaluate("document.getElementById('btn-nav-units').click()");
+      await delay(150);
+      const units = await send('Page.captureScreenshot', { format: 'png' });
+      fs.writeFileSync(path.join(os.tmpdir(), 'defense-units-' + width + '.png'), Buffer.from(units.data, 'base64'));
+    }
+    await evaluate("document.getElementById('modal-mode-select').style.display = 'none'; document.getElementById('modal-units').style.display = 'none'");
+  }
+  await evaluate(`Promise.all([
+    ...GameArt.portraitTypes.map(id => 'assets/images/ui/' + id.toLowerCase() + '.webp'),
+    ...['mode-normal', 'mode-hard', 'mode-nightmare', 'button-panel'].map(id => 'assets/images/ui/' + id + '.webp')
+  ].map(src => new Promise((resolve, reject) => {
+    const image = new Image(); image.onload = resolve;
+    image.onerror = () => reject(new Error('Missing generated asset: ' + src)); image.src = src;
+  })))`);
   assert.deepEqual(errors, [], 'Browser runtime errors');
-  console.log('PASS', JSON.stringify({ ...result, difficulties: 3, energy: true, manualCollection: true, upgrades: 5, mobile: true, pause: true }));
+  console.log('PASS', JSON.stringify({ ...result, difficulties: 3, energy: true, manualCollection: true, upgrades: 5, responsiveSizes: sizes.length, portraits: 14, mobile: true, pause: true }));
   console.log('Preview:', screenshotPath);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (socket) socket.close();

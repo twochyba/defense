@@ -6,7 +6,7 @@ const GameArt = {
 
   portrait(type, fallback) {
     return this.portraitTypes.includes(type)
-      ? `<img class="unit-art" src="assets/images/ui/${type.toLowerCase()}.webp" alt="" decoding="async" loading="lazy">`
+      ? `<img class="unit-art" src="assets/images/ui/${type.toLowerCase()}.webp" alt="" width="384" height="384" decoding="async" loading="lazy">`
       : fallback;
   },
   towerTypes: ['SCOUT', 'GUNNER', 'SNIPER', 'ENGINEER', 'MEDIC',
