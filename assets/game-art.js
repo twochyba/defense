@@ -160,7 +160,7 @@ const GameArt = {
       const x = (prop.x + 0.5) * 40, y = (prop.y + 0.5) * 40;
       if (prop.type === 'mountain') {
         ctx.save();
-        ctx.translate(x + 20, y + 20);
+        ctx.translate((prop.x + 1) * 40, (prop.y + 1) * 40);
         ctx.scale(2, 2);
         const x = 0, y = 0;
         ctx.fillStyle = 'rgba(0,0,0,0.35)';

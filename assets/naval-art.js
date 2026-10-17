@@ -110,7 +110,7 @@ const NavalArt = {
       const x = (d.x + 0.5) * tile, y = (d.y + 0.5) * tile;
       if (d.type === 'mountain') {
         ctx.save();
-        ctx.translate(x + tile / 2, y + tile / 2);
+        ctx.translate((d.x + 1) * tile, (d.y + 1) * tile);
         ctx.scale(2, 2);
         const x = 0, y = 0;
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
