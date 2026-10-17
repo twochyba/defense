@@ -24,7 +24,7 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
     res.writeHead(404); res.end(); return;
   }
-  const type = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.webp': 'image/webp' }[path.extname(file)];
+  const type = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.webp': 'image/webp' }[path.extname(file)];
   res.setHeader('Content-Type', type || 'application/octet-stream');
   fs.createReadStream(file).pipe(res);
 });
@@ -68,7 +68,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   await evaluate(`new Promise((resolve, reject) => {
     let tries = 0;
     const poll = setInterval(() => {
-      if (window.game) { clearInterval(poll); NavalArt.ready.then(resolve); }
+      if (window.game) { clearInterval(poll); Promise.all([NavalArt.ready, GameArt.load()]).then(resolve); }
       else if (++tries > 100) { clearInterval(poll); reject(new Error('Game failed to initialize')); }
     }, 50);
   })`);
@@ -76,9 +76,146 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const result = await evaluate(`(() => {
     const check = (value, message) => { if (!value) throw new Error(message); };
     check(Object.keys(NavalArt.images).length === 12, 'Not all twelve images loaded');
+    check(Object.keys(GameArt.images).length === 3, 'Generated art did not load');
+    check(getComputedStyle(document.body).margin === '0px', 'External stylesheet did not load');
     const game = window.game;
+    const random = Math.random;
+    Math.random = () => 0.25;
+    try {
+      for (const mapId of ['VALLEY', 'LAVA', 'PORT']) {
+        let previous;
+        for (const id of ['NORMAL', 'HARD', 'NIGHTMARE']) {
+          document.querySelector('[data-mode="' + id + '"]').click();
+          check(game.selectedDifficulty === id, 'Menu did not select difficulty');
+          game.loadMap(mapId);
+          const settings = GAME_DIFFICULTIES[id];
+          check(game.energy === settings.startEnergy && game.lives === settings.lives, 'Starting resources ignore difficulty');
+          check(document.getElementById('map-difficulty-summary').textContent.includes(settings.name), 'Map summary is stale');
+          const first = game.waves[0].queue[0];
+          const stats = { hp: first.hp, speed: first.speed, delay: first.delay, count: game.waves[0].queue.length };
+          if (previous) {
+            check(stats.hp > previous.hp && stats.speed > previous.speed, 'Harder mode has weaker enemies');
+            check(stats.delay < previous.delay && stats.count > previous.count, 'Harder mode has no additional pressure');
+          }
+          previous = stats;
+          const bosses = game.waves.flatMap(w => w.queue).filter(e => e.type === 'BOSS').length;
+          const originalWaves = mapId === 'PORT' ? generatePortWaveConfig() : generateWaveConfig();
+          check(bosses === originalWaves.flatMap(w => w.queue).filter(e => e.type === 'BOSS').length, 'Difficulty duplicated a boss');
+          game.loadMap(mapId);
+          check(game.waves[0].queue[0].hp === stats.hp, 'Restart compounds difficulty scaling');
+          game.currentWaveIndex = settings.airEvery - 1;
+          game.startNextWave();
+          check(game.spawnQueue.some(e => e.type === 'BOMBER'), 'Air raid frequency ignores difficulty');
+          const gold = game.energy, queueSize = game.spawnQueue.length;
+          game.handleSkipClick();
+          check(game.energy === gold && game.spawnQueue.length === queueSize && game.isWaveInProgress, 'Skip erased the active wave');
+          game.state = 'PAUSED';
+          const waveIndex = game.currentWaveIndex;
+          game.isWaveInProgress = false;
+          game.startNextWave();
+          check(game.currentWaveIndex === waveIndex, 'Started a wave while paused');
+        }
+      }
+    } finally {
+      Math.random = random;
+      document.querySelector('[data-mode="NORMAL"]').click();
+    }
+    game.loadMap('VALLEY');
+    const profileCoins = window.playerProfile.coins;
+    check(game.getAvailableBuildTypes().includes('POWER_PLANT'), 'Power plant requires a loadout slot');
+    const tiles = [];
+    for (let r = 0; r < game.rows; r++) for (let c = 0; c < game.cols; c++) {
+      if (game.grid[r][c] === 0) tiles.push({ col: c, row: r });
+    }
+    const startingEnergy = game.energy;
+    game.selectBuildCard('POWER_PLANT');
+    game.handleCanvasClick(tiles[0].col, tiles[0].row);
+    const plant = game.selectedTower;
+    check(plant.typeId === 'POWER_PLANT' && game.energy === startingEnergy - 100, 'Plant purchase did not use energy');
+    plant.update(10, game);
+    check(plant.storedEnergy === 0, 'Plant farms energy between waves');
+    game.isWaveInProgress = true;
+    plant.update(2.35, game);
+    check(Math.abs(plant.storedEnergy - 23.5) < 0.001 && game.energy === startingEnergy - 100, 'Energy was not stored for manual collection');
+    game.state = 'PAUSED';
+    plant.update(10, game);
+    check(Math.abs(plant.storedEnergy - 23.5) < 0.001 && game.collectEnergy(plant) === 0, 'Plant operates while paused');
+    game.state = 'PLAYING';
+    const beforeCollect = game.energy;
+    game.dom.btnCollectEnergy.click();
+    check(game.energy === beforeCollect + 23 && Math.abs(plant.storedEnergy - 0.5) < 0.001, 'Collection lost fractional charge');
+    check(game.collectEnergy(plant) === 0, 'Collected the same energy twice');
+    plant.update(100, game);
+    check(plant.storedEnergy === 100, 'Plant exceeded battery capacity');
+    game.handleCanvasClick(plant.col, plant.row);
+    check(plant.storedEnergy === 0, 'Clicking the plant did not collect energy');
+    const beforeUpgrade = game.energy;
+    game.dom.btnUpgradeTower.click();
+    check(plant.level === 2 && game.energy === beforeUpgrade - 200, 'Plant upgrade did not consume energy');
+    plant.update(1, game);
+    check(plant.storedEnergy === 18 && plant.getLevelData().capacity === 200, 'Upgrade did not improve production and capacity');
+    game.energy = 10000;
+    game.updateUI();
+    for (let i = 0; i < 3; i++) game.dom.btnUpgradeTower.click();
+    check(plant.level === 5 && !plant.canUpgrade() && plant.getLevelData().energyRate === 75, 'Plant cannot reach its final level');
+    const maxEnergy = game.energy;
+    game.dom.btnUpgradeTower.click();
+    check(game.energy === maxEnergy && plant.level === 5, 'Max level charged another upgrade');
+    game.selectBuildCard('SCOUT');
+    const beforeBuild = game.energy;
+    game.handleCanvasClick(tiles[1].col, tiles[1].row);
+    check(game.selectedTower.typeId === 'SCOUT' && game.energy === beforeBuild - TOWER_TYPES.SCOUT.levels[0].cost, 'Defense did not consume energy');
+    game.selectedTower = plant;
+    const beforeSell = game.energy, refund = plant.getSellValue(), charge = Math.floor(plant.storedEnergy);
+    game.dom.btnSellTower.click();
+    check(game.energy === beforeSell + refund + charge && !game.towers.includes(plant), 'Selling lost stored energy or paid an incorrect refund');
+    check(game.collectEnergy(plant) === 0, 'Sold plant still generates spendable energy');
+    check(window.playerProfile.coins === profileCoins, 'Battle energy changed menu coins');
+    game.loadMap('VALLEY');
+    check(game.energy === GAME_DIFFICULTIES.NORMAL.startEnergy && !game.towers.length && !game.spawnQueue.length, 'Restart kept old energy, buildings or queued enemies');
+    for (const type of GameArt.towerTypes) new Tower(type, 8, 6, 40).draw(game.ctx, true);
+    for (const type of ['NORMAL', 'FAST', 'TANK', 'BOSS', 'MARINE', 'ARMORED', 'ROCKET_S']) {
+      const enemy = new Enemy({ type, hp: 100, speed: 30, radius: 18, reward: 1 }, [{x: 0,y: 0},{x: 100,y: 0}]);
+      enemy.draw(game.ctx);
+    }
+    const atlas = GameArt.images.units;
+    delete GameArt.images.units;
+    new Tower('SCOUT', 8, 6, 40).draw(game.ctx, false);
+    GameArt.images.units = atlas;
     document.getElementById('main-menu-overlay').style.display = 'none';
-    for (const id of ['VALLEY', 'LAVA', 'PORT']) { game.loadMap(id); game.draw(); }
+    for (const id of ['VALLEY', 'LAVA', 'PORT']) {
+      game.loadMap(id);
+      game.startNextWave();
+      check(!game.spawnQueue.some(e => e.type === 'BOMBER'), 'Aircraft appeared before wave three');
+      game.isWaveInProgress = false;
+      game.currentWaveIndex = 2;
+      game.startNextWave();
+      const data = game.spawnQueue.find(e => e.type === 'BOMBER');
+      check(data && data.livesPenalty === 2, 'Wave three has no bomber');
+      const bomber = new Enemy(data, game.pathPixelPoints);
+      check(bomber.path.length === 2, 'Bomber follows the ground route');
+      check(bomber.path[1].x >= 40 && bomber.path[1].x <= 960 && bomber.path[1].y <= 560, 'Bomb target is outside the map');
+      bomber.draw(game.ctx);
+      const image = GameArt.images.units;
+      delete GameArt.images.units;
+      bomber.draw(game.ctx);
+      GameArt.images.units = image;
+      const lives = game.lives;
+      for (let i = 0; i < 2000 && !bomber.dead; i++) bomber.update(1 / 60, game);
+      check(bomber.reachedEnd && game.lives === lives - 2, 'Bomber did not damage the base');
+      bomber.reachExit(game);
+      check(game.lives === lives - 2, 'Bomber damaged the base twice');
+      const intercepted = new Enemy(data, game.pathPixelPoints);
+      const tower = new Tower('SCOUT', 8, 6, 40);
+      intercepted.x = tower.x + 10; intercepted.y = tower.y;
+      tower.findTarget([intercepted], 150);
+      check(tower.target === intercepted, 'Tower cannot target aircraft');
+      intercepted.takeDamage(intercepted.maxHp + 1, game, 'EXPLOSIVE');
+      intercepted.update(20, game);
+      check(intercepted.dead && !intercepted.reachedEnd && game.lives === lives - 2, 'Intercepted bomber damaged the base');
+      game.draw();
+    }
+    game.loadMap('PORT');
     game.state = 'PAUSED';
     for (let r = 0; r < game.rows; r++) for (let c = 0; c < game.cols; c++) {
       check((game.grid[r][c] !== 0) || !NavalArt.isWater(game.mapData, c, r), 'Building allowed in water');
@@ -127,8 +264,21 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   assert(await evaluate('window.game.canvas.getBoundingClientRect().width <= 390'), 'Canvas does not fit mobile width');
   const mobileScreenshot = await send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync(path.join(os.tmpdir(), 'defense-naval-mobile-preview.png'), Buffer.from(mobileScreenshot.data, 'base64'));
+  await evaluate(`(() => {
+    const game = window.game;
+    game.loadMap('VALLEY');
+    const plant = new Tower('POWER_PLANT', 7, 4, 40);
+    plant.upgrade(); plant.upgrade(); plant.storedEnergy = 275;
+    game.towers = [plant, new Tower('SCOUT', 7, 3, 40)];
+    game.selectedTower = plant;
+    game.state = 'PAUSED';
+    game.dom.waveAnnouncer.style.display = 'none';
+    game.updateUI(); game.draw();
+  })()`);
+  const energyScreenshot = await send('Page.captureScreenshot', { format: 'png' });
+  fs.writeFileSync(path.join(os.tmpdir(), 'defense-energy-mobile-preview.png'), Buffer.from(energyScreenshot.data, 'base64'));
   assert.deepEqual(errors, [], 'Browser runtime errors');
-  console.log('PASS', JSON.stringify({ ...result, mobile: true, pause: true }));
+  console.log('PASS', JSON.stringify({ ...result, difficulties: 3, energy: true, manualCollection: true, upgrades: 5, mobile: true, pause: true }));
   console.log('Preview:', screenshotPath);
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (socket) socket.close();

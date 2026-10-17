@@ -1,0 +1,5067 @@
+    /* ==========================================================================
+       1. ЗВУКОВА СИСТЕМА (СИНТЕЗ ЗВУКІВ ЧЕРЕЗ WEB AUDIO API БЕЗ ЗОВНІШНІХ ФАЙЛІВ)
+       ========================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.15) {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+
+      shootArrow() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.08);
+
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.08);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.08);
+        } catch(e) {}
+      }
+
+      shootCannon() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(35, this.ctx.currentTime + 0.2);
+
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.2);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.2);
+        } catch(e) {}
+      }
+
+      shootMagic() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(1200, this.ctx.currentTime + 0.12);
+
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.14);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.14);
+        } catch(e) {}
+      }
+
+      explosion() {
+        if (this.muted || !this.ctx) return;
+        this.playTone(80, 'sawtooth', 0.25, 0.22);
+      }
+
+      enemyHit() {
+        this.playTone(280, 'sine', 0.04, 0.06);
+      }
+
+      enemyKill() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(660, now);
+          osc.frequency.setValueAtTime(880, now + 0.05);
+
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.15);
+        } catch(e) {}
+      }
+
+      build() {
+        this.playTone(440, 'triangle', 0.1, 0.15);
+      }
+
+      upgrade() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.08, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.08);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.08);
+          });
+        } catch(e) {}
+      }
+
+      sell() {
+        this.playTone(550, 'sine', 0.12, 0.12);
+      }
+
+      lifeLost() {
+        this.playTone(130, 'sawtooth', 0.35, 0.25);
+      }
+
+      waveStart() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [330, 440, 554, 659].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, now + idx * 0.07);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.12);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.07);
+            osc.stop(now + idx * 0.07 + 0.12);
+          });
+        } catch(e) {}
+      }
+
+      bossSpawn() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(90, now);
+          osc.frequency.linearRampToValueAtTime(60, now + 0.6);
+
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.65);
+        } catch(e) {}
+      }
+
+      siren() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.linearRampToValueAtTime(640, now + 0.35);
+          osc.frequency.linearRampToValueAtTime(320, now + 0.7);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.75);
+        } catch(e) {}
+      }
+
+      missileLaunch() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(450, now);
+          osc.frequency.exponentialRampToValueAtTime(120, now + 0.25);
+
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.28);
+        } catch(e) {}
+      }
+
+      sonarPing() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1250, now);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(now + 0.4);
+        } catch(e) {}
+      }
+
+      victory() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.12, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.1);
+            osc.stop(now + i * 0.1 + 0.35);
+          });
+        } catch(e) {}
+      }
+
+      defeat() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const notes = [392, 349.23, 311.13, 261.63];
+          const now = this.ctx.currentTime;
+          notes.forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.15, now + i * 0.14);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.25);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.14);
+            osc.stop(now + i * 0.14 + 0.25);
+          });
+        } catch(e) {}
+      }
+
+      playClick() {
+        this.playTone(600, 'sine', 0.05, 0.08);
+      }
+
+      playBuy() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99].forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.12, now + i * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.2);
+          });
+        } catch(e) {}
+      }
+
+      playEquip() {
+        this.playTone(440, 'triangle', 0.08, 0.12);
+        setTimeout(() => this.playTone(880, 'triangle', 0.1, 0.15), 60);
+      }
+
+      playLevelUp() {
+        if (this.muted || !this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [440, 554.37, 659.25, 880].forEach((f, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.frequency.value = f;
+            gain.gain.setValueAtTime(0.15, now + i * 0.09);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.09);
+            osc.stop(now + i * 0.09 + 0.3);
+          });
+        } catch(e) {}
+      }
+
+      playAirstrike() {
+        this.sirenAlert();
+        setTimeout(() => this.explosion(), 600);
+        setTimeout(() => this.explosion(), 900);
+        setTimeout(() => this.explosion(), 1200);
+      }
+    }
+
+    const audio = new SoundEngine();
+
+    /* ==========================================================================
+      2. КОТАЛОГ БОЙОВИХ ЮНІТІВ TDS ТА ЇХ КОНФІГУРАЦІЯ
+       ========================================================================== */
+    const TDS_UNITS_CONFIG = [
+      {
+        id: 'SCOUT',
+        name: 'Розвідник',
+        icon: '🔫',
+        rarity: 'COMMON',
+        cost: 250,
+        crystalsCost: 0,
+        role: 'Швидкий стрілець',
+        desc: 'Базовий легкий боєць для ранніх хвиль. Висока скорострільність із пістолета/карабіна.',
+        bulletSpeed: 550
+      },
+      {
+        id: 'GUNNER',
+        name: 'Кулеметник',
+        icon: '🎯',
+        rarity: 'RARE',
+        cost: 600,
+        crystalsCost: 0,
+        role: 'Придушення вогнем',
+        desc: 'Швидкісна кулеметна черга. Ефективно викошує щільні натовпи ворогів.',
+        bulletSpeed: 600
+      },
+      {
+        id: 'SNIPER',
+        name: 'Снайпер',
+        icon: '🔭',
+        rarity: 'RARE',
+        cost: 800,
+        crystalsCost: 0,
+        role: 'Далекобійний ліквідатор',
+        desc: 'Величезна дистанція огляду та критичні постріли. Пріоритет — боси та броньовані цілі.',
+        bulletSpeed: 950
+      },
+      {
+        id: 'ENGINEER',
+        name: 'Інженер',
+        icon: '🔧',
+        rarity: 'EPIC',
+        cost: 1500,
+        crystalsCost: 0,
+        role: 'Будівник турелей',
+        desc: 'Встановлює додаткові автономні бойові турелі біля своєї позиції.',
+        bulletSpeed: 450
+      },
+      {
+        id: 'MEDIC',
+        name: 'Медик',
+        icon: '💉',
+        rarity: 'EPIC',
+        cost: 1700,
+        crystalsCost: 0,
+        role: 'Підтримка та лікування',
+        desc: 'Посилює швидкість атаки сусідніх веж (+15%..+35%) та періодично лікує базу (+1 ❤️)!',
+        bulletSpeed: 400
+      },
+      {
+        id: 'FLAMETHROWER',
+        name: 'Вогнеметник',
+        icon: '🔥',
+        rarity: 'EPIC',
+        cost: 2000,
+        crystalsCost: 0,
+        role: 'Конусне полум\'я (DoT)',
+        desc: 'Заливає ворогів потоком палаючого напалму в конусі, ігнорує броню.',
+        bulletSpeed: 380
+      },
+      {
+        id: 'ROCKETEER',
+        name: 'Ракетник',
+        icon: '🚀',
+        rarity: 'LEGENDARY',
+        cost: 3500,
+        crystalsCost: 0,
+        role: 'Важка артилерія (Splash)',
+        desc: 'Потужні керовані ракети з руйнівним радіусом вибуху. На 5 рівні стріляє потрійним залпом.',
+        bulletSpeed: 420
+      },
+      {
+        id: 'DRONE_OPERATOR',
+        name: 'Оператор дрона',
+        icon: '🛸',
+        rarity: 'LEGENDARY',
+        cost: 4000,
+        crystalsCost: 0,
+        role: 'Повітряне прикриття',
+        desc: 'Керує бойовими дронами, що кружляють над картою та атакують підводні й наземні цілі.',
+        bulletSpeed: 620
+      },
+      {
+        id: 'TANKER',
+        name: 'Танкіст',
+        icon: '🛡️',
+        rarity: 'LEGENDARY',
+        cost: 5000,
+        crystalsCost: 0,
+        role: 'Важка бронетехніка',
+        desc: 'Викликає важкий танк з бронебійною гарматою. Завдає колосальної шкоди від прямого попадання.',
+        bulletSpeed: 360
+      },
+      {
+        id: 'GENERAL',
+        name: 'Генерал',
+        icon: '⭐',
+        rarity: 'MYTHIC',
+        cost: 8000,
+        crystalsCost: 350,
+        role: 'Командувач фронту',
+        desc: 'Надає бойову ауру всім союзним вежам (+20%..+45% шкоди) та викликає тактичний авіаудар!',
+        bulletSpeed: 500
+      },
+      {
+        id: 'FALCON',
+        name: 'Falcon',
+        icon: '✈️',
+        rarity: 'LEGENDARY',
+        cost: 4200,
+        crystalsCost: 0,
+        role: 'Повітряна підтримка',
+        desc: 'Постійно кружляє над позицією, виявляє цілі в радіусі огляду й атакує їх з повітря.',
+        bulletSpeed: 680
+      },
+      {
+        id: 'FACTORY',
+        name: 'Військовий завод',
+        icon: '🏭',
+        rarity: 'EPIC',
+        cost: 1800,
+        crystalsCost: 0,
+        role: 'Економіка',
+        desc: 'Не атакує. Видає енергію один раз після завершення кожної хвилі; покращення збільшують дохід.',
+        bulletSpeed: 0
+      },
+      {
+        id: 'MILITARY_BASE',
+        name: 'Військова база',
+        icon: '🏰',
+        rarity: 'LEGENDARY',
+        cost: 3000,
+        crystalsCost: 0,
+        role: 'Мобільні підкріплення',
+        desc: 'Періодично випускає техніку на маршрут ворогів. Кожен рівень змінює машину та її озброєння.',
+        bulletSpeed: 0
+      }
+    ];
+
+    const TOWER_TYPES = {
+      POWER_PLANT: {
+        id: 'POWER_PLANT', name: 'Електростанція «Іскра»', icon: '⚡', rarity: 'COMMON',
+        desc: 'Генерує енергію під час хвиль. Натисніть станцію, щоб забрати заряд. 5 рівнів покращень.',
+        bulletSpeed: 0,
+        levels: [
+          { cost: 100, damage: 0, range: 0, rate: 0, energyRate: 10, capacity: 100, upgradeCost: 200, color: '#facc15', name: 'Польовий генератор' },
+          { cost: 300, damage: 0, range: 0, rate: 0, energyRate: 18, capacity: 200, upgradeCost: 450, color: '#fbbf24', name: 'Дизельна станція' },
+          { cost: 750, damage: 0, range: 0, rate: 0, energyRate: 30, capacity: 400, upgradeCost: 900, color: '#a3e635', name: 'Турбінна станція' },
+          { cost: 1650, damage: 0, range: 0, rate: 0, energyRate: 48, capacity: 700, upgradeCost: 1600, color: '#22d3ee', name: 'Плазмовий реактор' },
+          { cost: 3250, damage: 0, range: 0, rate: 0, energyRate: 75, capacity: 1200, upgradeCost: 0, color: '#c084fc', name: 'Термоядерний комплекс' }
+        ]
+      },
+      // 1. РОЗВІДНИК (Common, 250 🪙)
+      SCOUT: {
+        id: 'SCOUT',
+        name: 'Розвідник',
+        icon: '🔫',
+        rarity: 'COMMON',
+        desc: 'Швидкий стрілець з тактичним карабіном для початку битви',
+        bulletSpeed: 550,
+        levels: [
+          { cost: 250, damage: 14, range: 130, rate: 0.35, upgradeCost: 150, sellValue: 175, color: '#94a3b8', name: 'Рядовий розвідник' },
+          { cost: 400, damage: 26, range: 145, rate: 0.30, upgradeCost: 260, sellValue: 280, color: '#64748b', name: 'Штурмовий пістолет' },
+          { cost: 660, damage: 52, range: 160, rate: 0.25, upgradeCost: 400, sellValue: 462, color: '#38bdf8', name: 'Тактичний карабін' },
+          { cost: 1060, damage: 95, range: 180, rate: 0.20, upgradeCost: 650, sellValue: 742, color: '#0ea5e9', name: 'Подвійні пістолети-кулемети' },
+          { cost: 1710, damage: 160, range: 205, rate: 0.16, upgradeCost: 0,   sellValue: 1197, color: '#0284c7', name: 'Спецпризначенець «Авангард»' }
+        ]
+      },
+
+      // 2. КУЛЕМЕТНИК (Rare, 600 🪙)
+      GUNNER: {
+        id: 'GUNNER',
+        name: 'Кулеметник',
+        icon: '🎯',
+        rarity: 'RARE',
+        desc: 'Шалена щільність вогню для придушення великих хвиль ворогів',
+        bulletSpeed: 600,
+        levels: [
+          { cost: 600, damage: 16, range: 140, rate: 0.14, upgradeCost: 350, sellValue: 420, color: '#38bdf8', name: 'Кулеметник-новобранець' },
+          { cost: 950, damage: 32, range: 155, rate: 0.12, upgradeCost: 550, sellValue: 665, color: '#0ea5e9', name: 'Важкий кулемет' },
+          { cost: 1500, damage: 58, range: 170, rate: 0.10, upgradeCost: 800, sellValue: 1050, color: '#0284c7', name: 'Здвоєний ствол' },
+          { cost: 2300, damage: 98, range: 190, rate: 0.08, upgradeCost: 1200, sellValue: 1610, color: '#0369a1', name: 'Шестиствольний кулемет Гатлінга' },
+          { cost: 3500, damage: 165, range: 215, rate: 0.06, upgradeCost: 0,   sellValue: 2450, color: '#0284c7', name: 'Кулеметний термінатор' }
+        ]
+      },
+
+      // 3. СНАЙПЕР (Rare, 800 🪙)
+      SNIPER: {
+        id: 'SNIPER',
+        name: 'Снайпер',
+        icon: '🔭',
+        rarity: 'RARE',
+        desc: 'Величезна дальність, нищівний постріл, критичні удари по босах',
+        bulletSpeed: 950,
+        levels: [
+          { cost: 800, damage: 120, range: 270, rate: 3.20, upgradeCost: 450, sellValue: 560, color: '#84cc16', name: 'Снайпер-мисливець' },
+          { cost: 1250, damage: 240, range: 300, rate: 2.80, upgradeCost: 700, sellValue: 875, color: '#65a30d', name: 'Гвинтівка калібру .338' },
+          { cost: 1950, damage: 450, range: 340, rate: 2.40, upgradeCost: 1050, sellValue: 1365, color: '#4d7c0f', name: 'Тепловізійний приціл' },
+          { cost: 3000, damage: 780, range: 380, rate: 2.00, upgradeCost: 1500, sellValue: 2100, color: '#bef264', critChance: 0.35, name: 'Крупнокаліберна Barrett .50' },
+          { cost: 4500, damage: 1350, range: 430, rate: 1.65, upgradeCost: 0,   sellValue: 3150, color: '#d9f99d', critChance: 0.50, name: 'Примарний снайпер-ліквідатор' }
+        ]
+      },
+
+      // 4. ІНЖЕНЕР (Epic, 1500 🪙)
+      ENGINEER: {
+        id: 'ENGINEER',
+        name: 'Інженер',
+        icon: '🔧',
+        rarity: 'EPIC',
+        desc: 'Будує та розміщує допоміжні автономні міні-турелі навколо себе',
+        bulletSpeed: 450,
+        levels: [
+          { cost: 1500, damage: 35, range: 150, rate: 1.00, sentryCount: 1, sentryDmg: 20, upgradeCost: 800, sellValue: 1050, color: '#f59e0b', name: 'Польовий механік' },
+          { cost: 2300, damage: 65, range: 165, rate: 0.85, sentryCount: 1, sentryDmg: 35, upgradeCost: 1200, sellValue: 1610, color: '#d97706', name: 'Автономна турель' },
+          { cost: 3500, damage: 110, range: 180, rate: 0.75, sentryCount: 2, sentryDmg: 55, upgradeCost: 1800, sellValue: 2450, color: '#b45309', name: 'Подвійні турелі' },
+          { cost: 5300, damage: 180, range: 200, rate: 0.65, sentryCount: 2, sentryDmg: 85, upgradeCost: 2400, sellValue: 3710, color: '#fbbf24', name: 'Ракетна турель інженера' },
+          { cost: 7700, damage: 290, range: 225, rate: 0.50, sentryCount: 3, sentryDmg: 130, upgradeCost: 0,   sellValue: 5390, color: '#fde68a', name: 'Головний конструктор бази' }
+        ]
+      },
+
+      // 5. МЕДИК (Epic, 1700 🪙)
+      MEDIC: {
+        id: 'MEDIC',
+        name: 'Медик',
+        icon: '💉',
+        rarity: 'EPIC',
+        desc: 'Підвищує швидкість союзних веж та відновлює життєву міць бази (+1 ❤️)',
+        bulletSpeed: 400,
+        levels: [
+          { cost: 1700, damage: 20, range: 140, rate: 1.20, buffSpeed: 0.12, upgradeCost: 900, sellValue: 1190, color: '#10b981', name: 'Санітар (+12% аура)' },
+          { cost: 2600, damage: 40, range: 155, rate: 1.00, buffSpeed: 0.18, upgradeCost: 1400, sellValue: 1820, color: '#059669', name: 'Військовий фельдшер (+18% аура)' },
+          { cost: 4000, damage: 70, range: 170, rate: 0.90, buffSpeed: 0.22, healRate: 40, upgradeCost: 2000, sellValue: 2800, color: '#047857', name: 'Польовий хірург (+1 ❤️/40с)' },
+          { cost: 6000, damage: 120, range: 190, rate: 0.80, buffSpeed: 0.28, healRate: 25, upgradeCost: 2800, sellValue: 4200, color: '#34d399', name: 'Реанімаційний модуль (+1 ❤️/25с)' },
+          { cost: 8800, damage: 200, range: 215, rate: 0.65, buffSpeed: 0.35, healRate: 15, upgradeCost: 0,   sellValue: 6160, color: '#6ee7b7', name: 'Ангел-охоронець (+1 ❤️/15с, +35% аура)' }
+        ]
+      },
+
+      // 6. ВОГНЕМЕТНИК (Epic, 2000 🪙)
+      FLAMETHROWER: {
+        id: 'FLAMETHROWER',
+        name: 'Вогнеметник',
+        icon: '🔥',
+        rarity: 'EPIC',
+        desc: 'Конусний струмінь палаючого напалму, що спалює броню та накладає DoT',
+        bulletSpeed: 380,
+        levels: [
+          { cost: 2000, damage: 24, range: 130, rate: 0.25, flameTicks: 5, upgradeCost: 1100, sellValue: 1400, color: '#f97316', name: 'Вогнеметник' },
+          { cost: 3100, damage: 45, range: 145, rate: 0.22, flameTicks: 6, upgradeCost: 1600, sellValue: 2170, color: '#ea580c', name: 'Посилений напалм' },
+          { cost: 4700, damage: 80, range: 160, rate: 0.18, flameTicks: 7, upgradeCost: 2300, sellValue: 3290, color: '#c2410c', name: 'Високотемпературна суміш' },
+          { cost: 7000, damage: 140, range: 180, rate: 0.15, flameTicks: 8, upgradeCost: 3200, sellValue: 4900, color: '#dc2626', name: 'Пекельний струмінь' },
+          { cost: 10200, damage: 235, range: 205, rate: 0.12, flameTicks: 10, upgradeCost: 0,   sellValue: 7140, color: '#b91c1c', name: 'Термобаричний випалювач' }
+        ]
+      },
+
+      // 7. РАКЕТНИК (Legendary, 3500 🪙)
+      ROCKETEER: {
+        id: 'ROCKETEER',
+        name: 'Ракетник',
+        icon: '🚀',
+        rarity: 'LEGENDARY',
+        desc: 'Важкі ракети з велетенським радіусом вибуху. Стріляє залпами на високих рівнях',
+        bulletSpeed: 420,
+        levels: [
+          { cost: 3500, damage: 170, range: 180, rate: 2.30, splash: 70, upgradeCost: 1800, sellValue: 2450, color: '#e11d48', name: 'Ракетник з RPG' },
+          { cost: 5300, damage: 320, range: 200, rate: 2.00, splash: 85, upgradeCost: 2600, sellValue: 3710, color: '#be123c', name: 'Комплекс Stinger' },
+          { cost: 7900, damage: 560, range: 220, rate: 1.80, splash: 105, upgradeCost: 3600, sellValue: 5530, color: '#9f1239', name: 'Здвоєний ракетний модуль' },
+          { cost: 11500, damage: 920, range: 245, rate: 1.50, splash: 125, multiRocket: 2, upgradeCost: 4800, sellValue: 8050, color: '#f43f5e', name: 'РСЗВ «Град»' },
+          { cost: 16300, damage: 1550, range: 280, rate: 1.25, splash: 160, multiRocket: 3, upgradeCost: 0,   sellValue: 11410, color: '#fda4af', name: 'Ядерний комплекс «Апокаліпсис»' }
+        ]
+      },
+
+      // 8. ОПЕРАТОР ДРОНА (Legendary, 4000 🪙)
+      DRONE_OPERATOR: {
+        id: 'DRONE_OPERATOR',
+        name: 'Оператор дрона',
+        icon: '🛸',
+        rarity: 'LEGENDARY',
+        desc: 'Патрульні бойові дрони в повітрі, розвідка підводних цілей, лазерні удари',
+        bulletSpeed: 620,
+        levels: [
+          { cost: 4000, damage: 48, range: 180, rate: 0.40, droneCount: 1, canTargetSub: true, upgradeCost: 2000, sellValue: 2800, color: '#8b5cf6', name: 'Дрон-розвідник' },
+          { cost: 6000, damage: 90, range: 200, rate: 0.35, droneCount: 1, canTargetSub: true, upgradeCost: 2900, sellValue: 4200, color: '#7c3aed', name: 'Ударний дрон' },
+          { cost: 8900, damage: 155, range: 220, rate: 0.30, droneCount: 2, canTargetSub: true, upgradeCost: 4000, sellValue: 6230, color: '#6d28d9', name: 'Два бойові дрони' },
+          { cost: 12900, damage: 245, range: 245, rate: 0.25, droneCount: 2, canTargetSub: true, upgradeCost: 5500, sellValue: 9030, color: '#a78bfa', name: 'Дрон «Байрактар»' },
+          { cost: 18400, damage: 390, range: 280, rate: 0.20, droneCount: 3, canTargetSub: true, upgradeCost: 0,   sellValue: 12880, color: '#c4b5fd', name: 'Рій автономних ударних дронів' }
+        ]
+      },
+
+      // 9. ТАНКІСТ (Legendary, 5000 🪙)
+      TANKER: {
+        id: 'TANKER',
+        name: 'Танкіст',
+        icon: '🛡️',
+        rarity: 'LEGENDARY',
+        desc: 'Важкий танк із нищівною гарматою та ударними хвилями по землі',
+        bulletSpeed: 360,
+        levels: [
+          { cost: 5000, damage: 250, range: 165, rate: 2.20, splash: 65, upgradeCost: 2400, sellValue: 3500, color: '#15803d', name: 'Легкий танк' },
+          { cost: 7400, damage: 480, range: 185, rate: 1.95, splash: 80, upgradeCost: 3500, sellValue: 5180, color: '#166534', name: 'Середній танк T-72' },
+          { cost: 10900, damage: 820, range: 205, rate: 1.70, splash: 100, upgradeCost: 4900, sellValue: 7630, color: '#14532d', name: 'Важкий танк Leopard 2' },
+          { cost: 15800, damage: 1350, range: 230, rate: 1.45, splash: 125, upgradeCost: 6500, sellValue: 11060, color: '#22c55e', name: 'M1A2 Abrams з урановою бронею' },
+          { cost: 22300, damage: 2200, range: 265, rate: 1.20, splash: 160, upgradeCost: 0,   sellValue: 15610, color: '#86efac', name: 'Надпотужний танк «Мамонт»' }
+        ]
+      },
+
+      // 10. ГЕНЕРАЛ (Mythic, 8000 🪙 / 350 💎)
+      GENERAL: {
+        id: 'GENERAL',
+        name: 'Генерал',
+        icon: '⭐',
+        rarity: 'MYTHIC',
+        desc: 'Головнокомандувач! Бойова аура (+20%..+45% шкоди всім вежам) та тактичний авіаудар!',
+        bulletSpeed: 500,
+        levels: [
+          { cost: 8000, damage: 85, range: 180, rate: 1.40, auraDmgBuff: 0.20, auraRateBuff: 0.15, airstrikeCooldown: 25, upgradeCost: 3500, sellValue: 5600, color: '#eab308', name: 'Генерал-майор (+20% аура)' },
+          { cost: 11500, damage: 160, range: 205, rate: 1.25, auraDmgBuff: 0.25, auraRateBuff: 0.20, airstrikeCooldown: 22, upgradeCost: 5000, sellValue: 8050, color: '#ca8a04', name: 'Генерал-лейтенант (+25% аура)' },
+          { cost: 16500, damage: 280, range: 230, rate: 1.10, auraDmgBuff: 0.30, auraRateBuff: 0.25, airstrikeCooldown: 18, upgradeCost: 7000, sellValue: 11550, color: '#a16207', name: 'Генерал армії (+30% аура)' },
+          { cost: 23500, damage: 450, range: 260, rate: 0.95, auraDmgBuff: 0.38, auraRateBuff: 0.30, airstrikeCooldown: 14, upgradeCost: 9500, sellValue: 16450, color: '#facc15', name: 'Головнокомандувач (+38% аура)' },
+          { cost: 33000, damage: 720, range: 300, rate: 0.80, auraDmgBuff: 0.45, auraRateBuff: 0.40, airstrikeCooldown: 10, upgradeCost: 0,   sellValue: 23100, color: '#fef08a', name: 'Верховний маршал «Перемога» (+45%)' }
+        ]
+      },
+
+      // СТАРІ ВЕЖІ ДЛЯ СУМІСНОСТІ
+      ARCHER: {
+        id: 'ARCHER',
+        name: 'Стрілець',
+        icon: '🏹',
+        desc: 'Швидка одиночна стрільба далекобійними стрілами',
+        bulletSpeed: 520,
+        levels: [
+          { cost: 100, damage: 16, range: 135, rate: 0.60, upgradeCost: 80,  sellValue: 70,  color: '#38bdf8' },
+          { cost: 180, damage: 32, range: 155, rate: 0.50, upgradeCost: 140, sellValue: 125, color: '#0ea5e9' },
+          { cost: 320, damage: 62, range: 175, rate: 0.42, upgradeCost: 220, sellValue: 220, color: '#0284c7' },
+          { cost: 540, damage: 115,range: 200, rate: 0.32, upgradeCost: 0,   sellValue: 375, color: '#38bdf8' }
+        ]
+      },
+      CANNON: {
+        id: 'CANNON',
+        name: 'Гармата',
+        icon: '💣',
+        desc: 'Вибухові ядра з великим уроном по області (Splash)',
+        bulletSpeed: 340,
+        levels: [
+          { cost: 150, damage: 45, range: 115, rate: 1.50, splash: 48, upgradeCost: 120, sellValue: 105, color: '#f97316' },
+          { cost: 270, damage: 95, range: 130, rate: 1.35, splash: 60, upgradeCost: 200, sellValue: 190, color: '#ea580c' },
+          { cost: 470, damage: 175,range: 145, rate: 1.20, splash: 75, upgradeCost: 300, sellValue: 330, color: '#c2410c' },
+          { cost: 770, damage: 320,range: 165, rate: 1.00, splash: 95, upgradeCost: 0,   sellValue: 540, color: '#ef4444' }
+        ]
+      },
+      MAGE: {
+        id: 'MAGE',
+        name: 'Маг',
+        icon: '❄️',
+        desc: 'Крижані магічні згустки, які сповільнюють рух ворогів',
+        bulletSpeed: 420,
+        levels: [
+          { cost: 125, damage: 22, range: 125, rate: 1.05, slow: 0.38, slowDuration: 2.2, upgradeCost: 100, sellValue: 85,  color: '#c084fc' },
+          { cost: 225, damage: 45, range: 140, rate: 0.90, slow: 0.48, slowDuration: 2.6, upgradeCost: 175, sellValue: 155, color: '#a855f7' },
+          { cost: 400, damage: 82, range: 155, rate: 0.80, slow: 0.56, slowDuration: 3.0, freezeDuration: 0.55, upgradeCost: 260, sellValue: 280, color: '#9333ea' },
+          { cost: 660, damage: 145,range: 175, rate: 0.68, slow: 0.62, slowDuration: 3.5, freezeDuration: 0.9, upgradeCost: 0,   sellValue: 460, color: '#67e8f9' }
+        ]
+      },
+      TESLA: {
+        id: 'TESLA',
+        name: 'Тесла',
+        icon: '⚡',
+        desc: 'Ланцюгова блискавка вражає 3-5 ворогів поруч один за одним',
+        bulletSpeed: 0,
+        levels: [
+          { cost: 200, damage: 35,  range: 130, rate: 1.20, chainCount: 3, chainRange: 90,  upgradeCost: 160, sellValue: 140, color: '#facc15' },
+          { cost: 360, damage: 70,  range: 145, rate: 1.05, chainCount: 4, chainRange: 100, upgradeCost: 260, sellValue: 250, color: '#eab308' },
+          { cost: 620, damage: 125, range: 160, rate: 0.90, chainCount: 4, chainRange: 115, upgradeCost: 380, sellValue: 435, color: '#ca8a04' },
+          { cost: 1000,damage: 200, range: 175, rate: 0.75, chainCount: 5, chainRange: 130, upgradeCost: 0,   sellValue: 700, color: '#fde047', stunDuration: 0.5 }
+        ]
+      },
+      POISON: {
+        id: 'POISON',
+        name: 'Отруйна',
+        icon: '🧪',
+        desc: 'Плює отруйними кулями, що завдають урон з часом протягом кількох секунд',
+        bulletSpeed: 360,
+        levels: [
+          { cost: 140, damage: 8,  range: 120, rate: 1.30, dotTicks: 4, dotInterval: 0.8, upgradeCost: 110, sellValue: 98,  color: '#4ade80' },
+          { cost: 250, damage: 14, range: 135, rate: 1.10, dotTicks: 5, dotInterval: 0.7, upgradeCost: 190, sellValue: 175, color: '#22c55e' },
+          { cost: 440, damage: 24, range: 150, rate: 0.95, dotTicks: 6, dotInterval: 0.6, upgradeCost: 280, sellValue: 308, color: '#16a34a' },
+          { cost: 720, damage: 38, range: 165, rate: 0.80, dotTicks: 8, dotInterval: 0.5, upgradeCost: 0,   sellValue: 504, color: '#86efac', poisonSlow: 0.20 }
+        ]
+      },
+      COASTAL_GUN: {
+        id: 'COASTAL_GUN',
+        name: 'Берегова гармата',
+        icon: '🔫',
+        desc: 'Важка берегова артилерія, що нищить групи морських ворогів потужними вибуховими снарядами',
+        bulletSpeed: 280,
+        isNaval: true,
+        levels: [
+          { cost: 200, damage: 75,  range: 145, rate: 2.20, splash: 65, upgradeCost: 160, sellValue: 140, color: '#f97316' },
+          { cost: 360, damage: 145, range: 160, rate: 2.00, splash: 80, upgradeCost: 260, sellValue: 252, color: '#ea580c' },
+          { cost: 620, damage: 250, range: 175, rate: 1.80, splash: 95, upgradeCost: 380, sellValue: 434, color: '#dc2626' },
+          { cost: 1000,damage: 400, range: 190, rate: 1.60, splash:115, upgradeCost: 500, sellValue: 700, color: '#b91c1c' },
+          { cost: 1500,damage: 650, range: 210, rate: 1.40, splash:140, upgradeCost: 0,   sellValue:1050, color: '#ef4444', volleyShots: 3 }
+        ]
+      },
+      ROCKET_BOAT: {
+        id: 'ROCKET_BOAT',
+        name: 'Ракетний катер',
+        icon: '🚤',
+        desc: 'Бойовий катер, що патрулює море та запускає самонавідні ракети по всіх ворогах у зоні досяжності',
+        bulletSpeed: 420,
+        isNaval: true,
+        levels: [
+          { cost: 225, damage: 90,  range: 160, rate: 1.80, splash: 55, upgradeCost: 180, sellValue: 157, color: '#38bdf8' },
+          { cost: 405, damage: 170, range: 175, rate: 1.60, splash: 68, upgradeCost: 290, sellValue: 283, color: '#0ea5e9' },
+          { cost: 695, damage: 290, range: 190, rate: 1.45, splash: 82, upgradeCost: 420, sellValue: 486, color: '#0284c7' },
+          { cost: 1115,damage: 460, range: 205, rate: 1.25, splash: 98, upgradeCost: 560, sellValue: 780, color: '#0369a1' },
+          { cost: 1675,damage: 740, range: 225, rate: 1.00, splash:118, upgradeCost: 0,   sellValue:1172, color: '#7dd3fc', multiRocket: 4 }
+        ]
+      },
+      SEA_DRONE: {
+        id: 'SEA_DRONE',
+        name: 'Морський дрон',
+        icon: '🛸',
+        desc: 'Бойовий дрон, що літає над морем і швидко атакує ворогів, включаючи підводні та невидимі цілі',
+        bulletSpeed: 600,
+        isNaval: true,
+        levels: [
+          { cost: 175, damage: 28,  range: 140, rate: 0.55, upgradeCost: 140, sellValue: 122, color: '#c084fc', canTargetSub: true },
+          { cost: 315, damage: 55,  range: 155, rate: 0.48, upgradeCost: 230, sellValue: 220, color: '#a855f7', canTargetSub: true },
+          { cost: 545, damage: 95,  range: 172, rate: 0.40, upgradeCost: 340, sellValue: 381, color: '#9333ea', canTargetSub: true, splash: 45 },
+          { cost: 885, damage: 150, range: 190, rate: 0.33, upgradeCost: 460, sellValue: 619, color: '#7c3aed', canTargetSub: true, splash: 60 },
+          { cost: 1345,damage: 230, range: 215, rate: 0.27, upgradeCost: 0,   sellValue: 941, color: '#ddd6fe', canTargetSub: true, splash: 80, deepScan: true }
+        ]
+      },
+      FALCON: {
+        id: 'FALCON', name: 'Falcon', icon: '✈️', rarity: 'LEGENDARY',
+        desc: 'Літає колом, стежить за цілями поблизу та атакує з повітря.', bulletSpeed: 680,
+        levels: [
+          { cost: 4200, damage: 55, range: 105, flightRadius: 62, flightSpeed: 1.2, rate: 0.8, upgradeCost: 1800, sellValue: 2940, color: '#60a5fa', name: 'Легкий винищувач', attackMode: 'GUN' },
+          { cost: 6000, damage: 75, range: 125, flightRadius: 68, flightSpeed: 1.3, rate: 0.6, upgradeCost: 2600, sellValue: 4200, color: '#38bdf8', name: 'Покращені приціли', attackMode: 'GUN' },
+          { cost: 8600, damage: 135, range: 140, flightRadius: 72, flightSpeed: 1.35, rate: 1.2, splash: 34, upgradeCost: 3800, sellValue: 6020, color: '#f97316', name: 'Ракетне озброєння', attackMode: 'ROCKET' },
+          { cost: 12400, damage: 175, range: 155, flightRadius: 82, flightSpeed: 1.65, rate: 1.0, splash: 42, upgradeCost: 5200, sellValue: 8680, color: '#fb7185', name: 'Форсажні двигуни', attackMode: 'ROCKET' },
+          { cost: 17600, damage: 280, range: 175, flightRadius: 88, flightSpeed: 1.85, rate: 0.75, splash: 58, upgradeCost: 0, sellValue: 12320, color: '#fbbf24', name: 'Falcon-X', attackMode: 'ROCKET' }
+        ]
+      },
+      FACTORY: {
+        id: 'FACTORY', name: 'Військовий завод', icon: '🏭', rarity: 'EPIC',
+        desc: 'Видає енергію після завершення хвилі, не атакує ворогів.', bulletSpeed: 0,
+        levels: [
+          { cost: 1800, damage: 0, range: 0, rate: 0, income: 100, upgradeCost: 1000, sellValue: 1260, color: '#84a98c', name: 'Малий завод' },
+          { cost: 2800, damage: 0, range: 0, rate: 0, income: 250, upgradeCost: 1800, sellValue: 1960, color: '#65a30d', name: 'Військовий завод' },
+          { cost: 4600, damage: 0, range: 0, rate: 0, income: 500, upgradeCost: 3000, sellValue: 3220, color: '#22c55e', name: 'Промисловий комплекс' },
+          { cost: 7600, damage: 0, range: 0, rate: 0, income: 900, upgradeCost: 4800, sellValue: 5320, color: '#38bdf8', name: 'Автоматизований завод' },
+          { cost: 12400, damage: 0, range: 0, rate: 0, income: 1500, upgradeCost: 0, sellValue: 8680, color: '#fbbf24', name: 'Військовий мегазавод' }
+        ]
+      },
+      MILITARY_BASE: {
+        id: 'MILITARY_BASE', name: 'Військова база', icon: '🏰', rarity: 'LEGENDARY',
+        desc: 'Випускає керовану техніку, яка рухається маршрутом і атакує ворогів.', bulletSpeed: 520,
+        levels: [
+          { cost: 3000, damage: 100, range: 0, rate: 22, spawnInterval: 22, vehicleHp: 100, vehicleName: 'Hummer', collisionDamage: 100, upgradeCost: 1800, sellValue: 2100, color: '#84a98c' },
+          { cost: 4800, damage: 5, range: 115, rate: 2, spawnInterval: 20, vehicleHp: 200, vehicleName: 'Hummer із кулеметом', collisionDamage: 30, upgradeCost: 2800, sellValue: 3360, color: '#65a30d' },
+          { cost: 7600, damage: 150, range: 150, rate: 4, spawnInterval: 18, vehicleHp: 500, vehicleName: 'Бойовий танк', splash: 52, collisionDamage: 50, upgradeCost: 4200, sellValue: 5320, color: '#22c55e' },
+          { cost: 11800, damage: 250, range: 185, rate: 2.5, supportDamage: 10, supportRate: 0.5, spawnInterval: 16, vehicleHp: 1000, vehicleName: 'Технологічний танк', splash: 68, collisionDamage: 70, canDetectStealth: true, upgradeCost: 6200, sellValue: 8260, color: '#38bdf8' },
+          { cost: 18000, damage: 420, range: 220, rate: 1.8, supportDamage: 20, supportRate: 0.3, spawnInterval: 14, vehicleHp: 1800, vehicleName: 'Експериментальна платформа', splash: 88, collisionDamage: 90, canDetectStealth: true, upgradeCost: 0, sellValue: 12600, color: '#fbbf24' }
+        ]
+      }
+    };
+
+    /* ==========================================================================
+       3. КОНФІГУРАЦІЯ КАРТ (2 КАРТИ: ЗЕЛЕНА ДОЛИНА ТА ЛАВОВИЙ КАНЬЙОН)
+       ========================================================================== */
+    const MAP_DEFINITIONS = {
+      VALLEY: {
+        id: 'VALLEY',
+        name: 'Зелена долина',
+        difficulty: 'Нормальна',
+        cols: 25,
+        rows: 15,
+        theme: {
+          bg: '#1b4332',
+          grassDark: '#2d6a4f',
+          grassLight: '#40916c',
+          pathColor: '#d4a373',
+          pathBorder: '#a98467',
+          pathDetail: '#c49767',
+          water: '#1d4ed8'
+        },
+        // Точки повороту шляху (у координатах сітки X, Y)
+        pathPoints: [
+          { x: -0.5, y: 3 },
+          { x: 5, y: 3 },
+          { x: 5, y: 11 },
+          { x: 12, y: 11 },
+          { x: 12, y: 4 },
+          { x: 19, y: 4 },
+          { x: 19, y: 11 },
+          { x: 25.5, y: 11 }
+        ],
+        // Декоративні дерева та скелі
+        decorations: [
+          { type: 'tree', x: 2, y: 1 }, { type: 'tree', x: 8, y: 1 }, { type: 'tree', x: 16, y: 1 },
+          { type: 'tree', x: 2, y: 8 }, { type: 'tree', x: 9, y: 7 }, { type: 'tree', x: 16, y: 7 },
+          { type: 'tree', x: 22, y: 2 }, { type: 'tree', x: 22, y: 8 }, { type: 'tree', x: 15, y: 13 },
+          { type: 'rock', x: 3, y: 5 }, { type: 'rock', x: 8, y: 9 }, { type: 'rock', x: 17, y: 13 }
+        ]
+      },
+      LAVA: {
+        id: 'LAVA',
+        name: 'Лавовий каньйон',
+        difficulty: 'Складна',
+        cols: 25,
+        rows: 15,
+        theme: {
+          bg: '#181119',
+          grassDark: '#2b1a29',
+          grassLight: '#3d2539',
+          pathColor: '#b91c1c',
+          pathBorder: '#7f1d1d',
+          pathDetail: '#f97316',
+          lavaGlow: '#ea580c'
+        },
+        pathPoints: [
+          { x: 3, y: -0.5 },
+          { x: 3, y: 5 },
+          { x: 10, y: 5 },
+          { x: 10, y: 2 },
+          { x: 17, y: 2 },
+          { x: 17, y: 12 },
+          { x: 9, y: 12 },
+          { x: 9, y: 9 },
+          { x: 23, y: 9 },
+          { x: 23, y: 15.5 }
+        ],
+        decorations: [
+          { type: 'lavaVent', x: 1, y: 2 }, { type: 'lavaVent', x: 7, y: 3 }, { type: 'lavaVent', x: 20, y: 1 },
+          { type: 'lavaVent', x: 6, y: 7 }, { type: 'lavaVent', x: 14, y: 7 }, { type: 'lavaVent', x: 13, y: 14 },
+          { type: 'crystal', x: 14, y: 4 }, { type: 'crystal', x: 5, y: 10 }, { type: 'crystal', x: 20, y: 11 }
+        ]
+      },
+
+      // ===== КАРТА 3: ВІЙСЬКОВИЙ ПОРТ =====
+      PORT: {
+        id: 'PORT',
+        name: 'Військовий порт',
+        difficulty: 'Морська',
+        cols: 25,
+        rows: 15,
+        maxWaves: 30,
+        isNavalMap: true,
+        theme: {
+          bg: '#0c1a2e',           // темне нічне море
+          grassDark: '#0f2a3f',    // бетонний причал (темний)
+          grassLight: '#163352',   // бетонний причал (світлий)
+          pathColor: '#1e4d7a',    // вода — шлях ворогів
+          pathBorder: '#0d3359',   // береговий бордюр
+          pathDetail: '#1a6a9a',   // хвиля/піна
+          seaDeep: '#071424',      // глибоке море (фоновий шар)
+          water: '#0ea5e9'
+        },
+        // Маршрут: вороги виходять із лівого краю (море) → пробираються через порт → штурмують базу праворуч
+        pathPoints: [
+          { x: -0.5, y: 5 },   // старт — відкрите море зліва
+          { x: 5,    y: 5 },   // вхід у гавань
+          { x: 5,    y: 2 },   // поворот до доків
+          { x: 13,   y: 2 },   // вздовж причалу
+          { x: 13,   y: 8 },   // поворот вглиб порту
+          { x: 7,    y: 8 },   // через склади
+          { x: 7,    y: 12 },  // поворот до бази
+          { x: 18,   y: 12 },  // по бетонній смузі
+          { x: 18,   y: 7 },   // поворот до командного центру
+          { x: 25.5, y: 7 }    // вихід — головна база
+        ],
+        decorations: [
+          // Дерева та кущі на суші (зона бази)
+          { type: 'portTree', x: 20, y: 3 }, { type: 'portTree', x: 23, y: 4 },
+          { type: 'portTree', x: 20, y: 10 }, { type: 'portTree', x: 22, y: 11 },
+          // Вантажні контейнери вздовж причалу
+          { type: 'container', x: 10, y: 4, colorIdx: 0 },
+          { type: 'container', x: 11, y: 4, colorIdx: 1 },
+          { type: 'container', x: 10, y: 3, colorIdx: 2 },
+          { type: 'container', x: 15, y: 4, colorIdx: 0 },
+          { type: 'container', x: 16, y: 4, colorIdx: 1 },
+          { type: 'container', x: 9,  y: 10, colorIdx: 2 },
+          { type: 'container', x: 10, y: 10, colorIdx: 0 },
+          // Склади (великі прямокутники)
+          { type: 'warehouse', x: 4,  y: 10 },
+          { type: 'warehouse', x: 17, y: 9 },
+          // Радарні вежі
+          { type: 'radar', x: 21, y: 2 },
+          { type: 'radar', x: 24, y: 9 },
+          // Паливні цистерни
+          { type: 'tank', x: 19, y: 5 },
+          { type: 'tank', x: 20, y: 5 },
+          // Військовий корабель на рейді (декорація)
+          { type: 'warship', x: 2, y: 2 },
+          // Маяк
+          { type: 'lighthouse', x: 4, y: 13 },
+          { type: 'crane', x: 4, y: 8 },
+          // Хвильорізи
+          { type: 'buoy', x: 3, y: 7 }, { type: 'buoy', x: 3, y: 9 }
+        ]
+      }
+    };
+
+    /* ==========================================================================
+      4. КОНФІГУРАЦІЯ ХВИЛЬ ТА БОСІВ (25 ХВИЛЬ)
+       ========================================================================== */
+    // 3 Типи звичайних ворогів:
+    // - NORMAL: збалансований
+    // - FAST: висока швидкість, менше HP
+    // - TANK: повільний, високе HP
+    // 5 босових хвиль:
+    // - BOSS_1 (Хвиля 5): Кам'яний Голем - повільний, висока броня (40% поглинання урону)
+    // - BOSS_2 (Хвиля 10): Кривавий Владика - швидкий, регенерація здоров'я (120 HP/сек)
+    // - BOSS_3 (Хвиля 25): Архідемон Руїни - колосальне здоров'я, найвища броня
+
+    // Централізовані параметри легкої, нормальної та складної фаз. Межі 5 і 10
+    // закріплені за нормальним і складним етапами відповідно.
+    const GAME_DIFFICULTIES = {
+      NORMAL: { name: 'Звичайний', health: 1.15, speed: 1.05, count: 1, delay: 0.9, gold: 0.95, startEnergy: 450, lives: 20, airEvery: 3 },
+      HARD: { name: 'Складний', health: 1.7, speed: 1.18, count: 1.2, delay: 0.7, gold: 0.8, startEnergy: 425, lives: 15, airEvery: 3 },
+      NIGHTMARE: { name: 'Кошмар', health: 2.3, speed: 1.3, count: 1.4, delay: 0.5, gold: 0.65, startEnergy: 400, lives: 10, airEvery: 2 }
+    };
+
+    function scaleEnemyForDifficulty(enemy, difficulty) {
+      const scaled = { ...enemy };
+      for (const key of ['hp', 'maxHp', 'regenPerSec', 'shootDmg']) {
+        if (Number.isFinite(scaled[key])) scaled[key] = Math.max(1, Math.round(scaled[key] * difficulty.health));
+      }
+      if (Number.isFinite(scaled.speed)) scaled.speed *= difficulty.speed;
+      if (Number.isFinite(scaled.delay)) scaled.delay = Math.max(0.15, scaled.delay * difficulty.delay);
+      if (Number.isFinite(scaled.reward)) scaled.reward = Math.max(1, Math.round(scaled.reward * difficulty.gold));
+      return scaled;
+    }
+
+    const DIFFICULTY_PHASES = [
+      { from: 1, to: 4, health: [0.78, 0.84], speed: [0.92, 0.97], enemies: [18, 20], killGold: [0.90, 0.98], waveGold: [0.90, 0.98], spawnDelay: [1.15, 1.00] },
+      { from: 5, to: 9, health: [1.00, 1.12], speed: [1.00, 1.04], enemies: [22, 25], killGold: [1.00, 1.08], waveGold: [1.00, 1.10], spawnDelay: [1.00, 0.92] },
+      { from: 10, to: 25, health: [1.18, 2.35], speed: [1.06, 1.32], enemies: [27, 40], killGold: [1.12, 1.55], waveGold: [1.12, 1.70], spawnDelay: [0.88, 0.68] }
+    ];
+
+    function getDifficulty(wave) {
+      const phase = DIFFICULTY_PHASES.find(item => wave >= item.from && wave <= item.to);
+      const progress = phase.to === phase.from ? 0 : (wave - phase.from) / (phase.to - phase.from);
+      const interpolate = values => values[0] + (values[1] - values[0]) * progress;
+      return {
+        healthMultiplier: interpolate(phase.health),
+        speedMultiplier: interpolate(phase.speed),
+        enemyCount: Math.round(interpolate(phase.enemies)),
+        killGoldMultiplier: interpolate(phase.killGold),
+        waveGoldMultiplier: interpolate(phase.waveGold),
+        spawnDelayMultiplier: interpolate(phase.spawnDelay)
+      };
+    }
+
+    function generateWaveConfig() {
+      const waves = [];
+
+      for (let w = 1; w <= 25; w++) {
+        let title = `Хвиля ${w}`;
+        let queue = [];
+        const difficulty = getDifficulty(w);
+        let reward = Math.round((45 + w * 8 + Math.pow(Math.max(0, w - 9), 1.25) * 2) * difficulty.waveGoldMultiplier);
+        let isBossWave = false;
+        let bossData = null;
+
+        // Queue values use base stats; phase multipliers are applied once at the end.
+        const hpScale = 1;
+
+        const totalMobs = difficulty.enemyCount;
+
+        if (w === 5) {
+          // БОС 1: Хвиля 5 - Кам'яний Голем (22 вороги всього)
+          isBossWave = true;
+          title = "ХВИЛЯ 5: БОС 1 — КАМ'ЯНИЙ ГОЛЕМ";
+          bossData = {
+            id: 'BOSS_1',
+            name: "Кам'яний Голем",
+            title: "Броньований Колос (Повільний, висока броня)",
+            maxHp: 2400,
+            speed: 36,
+            radius: 22,
+            reward: 180,
+            livesPenalty: 5,
+            armor: 0.40,
+            color: '#a8a29e',
+            coreColor: '#facc15'
+          };
+
+          // Авангард перед босом (4 танки)
+          for (let i = 0; i < 4; i++) {
+            queue.push({ type: 'TANK', delay: 0.7, hp: Math.round(160 * hpScale), speed: 45, reward: 16, radius: 14, color: '#64748b' });
+          }
+          // Спавн боса
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          // Супровід після боса до загальної кількості totalMobs
+          const remaining = totalMobs - 5;
+          for (let i = 0; i < remaining; i++) {
+            queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(60 * hpScale), speed: 64, reward: 12, radius: 11, color: '#22c55e' });
+          }
+        }
+        else if (w === 10) {
+          // БОС 2: Хвиля 10 - Кривавий Владика (27 ворогів всього)
+          isBossWave = true;
+          title = "ХВИЛЯ 10: БОС 2 — КРИВАВИЙ ВЛАДИКА";
+          bossData = {
+            id: 'BOSS_2',
+            name: "Кривавий Владика",
+            title: "Регенератор плоті (Швидкий, регенерує здоров'я)",
+            maxHp: 4800,
+            speed: 66,
+            radius: 20,
+            reward: 280,
+            livesPenalty: 7,
+            regenPerSec: 120,
+            color: '#dc2626',
+            coreColor: '#f43f5e'
+          };
+
+          for (let i = 0; i < 4; i++) {
+            queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(55 * hpScale), speed: 102, reward: 14, radius: 10, color: '#f59e0b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          const remaining = totalMobs - 5;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 2 === 0) {
+              queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(55 * hpScale), speed: 102, reward: 14, radius: 10, color: '#f59e0b' });
+            } else {
+              queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(200 * hpScale), speed: 46, reward: 22, radius: 14, color: '#64748b' });
+            }
+          }
+        }
+        else if (w === 15) {
+          // БОС: Хвиля 15 - Залізний Колосс (31 ворог всього)
+          isBossWave = true;
+          title = "ХВИЛЯ 15: БОС — ЗАЛІЗНИЙ КОЛОСС";
+          bossData = {
+            id: 'BOSS_1_EVO',
+            name: "Залізний Колосс",
+            title: "Непохитна Сталь (Надважка броня, повільний крок)",
+            maxHp: 8500,
+            speed: 34,
+            radius: 24,
+            reward: 380,
+            livesPenalty: 7,
+            armor: 0.45,
+            color: '#64748b',
+            coreColor: '#38bdf8'
+          };
+
+          for (let i = 0; i < 5; i++) {
+            queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(220 * hpScale), speed: 45, reward: 24, radius: 14, color: '#64748b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          const remaining = totalMobs - 6;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 3 === 0) {
+              queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(220 * hpScale), speed: 45, reward: 24, radius: 14, color: '#64748b' });
+            } else {
+              queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(65 * hpScale), speed: 105, reward: 16, radius: 10, color: '#f59e0b' });
+            }
+          }
+        }
+        else if (w === 20) {
+          // Посилена хвиля 20: два різні боси замість одного.
+          isBossWave = true;
+          title = "ХВИЛЯ 20: ПОДВІЙНИЙ БОС — АРХІВАМПІР І ЗАЛІЗНИЙ КОЛОСС";
+          bossData = {
+            id: 'BOSS_2_EVO',
+            name: "Архівампір Тіней",
+            title: "Володар Ночі (Надшвидкий, супер-регенерація)",
+            maxHp: 13000,
+            speed: 70,
+            radius: 22,
+            reward: 480,
+            livesPenalty: 10,
+            regenPerSec: 200,
+            color: '#9333ea',
+            coreColor: '#c084fc'
+          };
+          const secondBossData = {
+            id: 'BOSS_1_EVO',
+            name: 'Залізний Колосс',
+            title: 'Непохитна Сталь (Броньований бос)',
+            maxHp: 10500,
+            speed: 34,
+            radius: 24,
+            reward: 620,
+            livesPenalty: 8,
+            armor: 0.48,
+            color: '#64748b',
+            coreColor: '#38bdf8'
+          };
+
+          for (let i = 0; i < 6; i++) {
+            queue.push({ type: 'FAST', delay: 0.4, hp: Math.round(75 * hpScale), speed: 110, reward: 18, radius: 10, color: '#f59e0b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.2, ...bossData });
+          queue.push({ type: 'BOSS', delay: 1.4, ...secondBossData });
+          const remaining = totalMobs - 8;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 2 === 0) {
+              queue.push({ type: 'FAST', delay: 0.4, hp: Math.round(75 * hpScale), speed: 110, reward: 18, radius: 10, color: '#f59e0b' });
+            } else {
+              queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(250 * hpScale), speed: 46, reward: 26, radius: 14, color: '#64748b' });
+            }
+          }
+        }
+        else if (w === 25) {
+          // Фінальна хвиля: найбільший запас здоров'я та броня серед босів.
+          isBossWave = true;
+          title = "ХВИЛЯ 25: ФІНАЛЬНИЙ БОС — АРХІДЕМОН РУЇНИ";
+          bossData = {
+            id: 'BOSS_3',
+            name: "Архідемон Руїни",
+            title: "Володар Кінця Світу (Найбільше HP, броня 55%)",
+            maxHp: 30000,
+            speed: 38,
+            radius: 28,
+            reward: 800,
+            livesPenalty: 20,
+            armor: 0.55,
+            color: '#7e22ce',
+            coreColor: '#e11d48'
+          };
+
+          // Авангард
+          for (let i = 0; i < 4; i++) {
+            queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(280 * hpScale), speed: 48, reward: 28, radius: 14, color: '#64748b' });
+          }
+          queue.push({ type: 'BOSS', delay: 1.4, ...bossData });
+          // Ескорт армії
+          const remaining = totalMobs - 5;
+          for (let i = 0; i < remaining; i++) {
+            if (i % 3 === 0) {
+              queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(280 * hpScale), speed: 48, reward: 28, radius: 14, color: '#64748b' });
+            } else if (i % 3 === 1) {
+              queue.push({ type: 'FAST', delay: 0.38, hp: Math.round(85 * hpScale), speed: 115, reward: 20, radius: 10, color: '#f59e0b' });
+            } else {
+              queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(95 * hpScale), speed: 68, reward: 18, radius: 11, color: '#22c55e' });
+            }
+          }
+        }
+        else {
+          // Звичайні хвилі: склад і чисельність залежать від фази складності.
+          for (let i = 0; i < totalMobs; i++) {
+            const roll = Math.random();
+            if (w <= 2) {
+              // Хвилі 1-2: звичайні піхотинці
+              queue.push({
+                type: 'NORMAL',
+                delay: 0.55,
+                hp: Math.round(55 * hpScale),
+                speed: 62,
+                reward: 10 + Math.floor(w * 0.8),
+                radius: 11,
+                color: '#22c55e'
+              });
+            } else if (w <= 4) {
+              // Початок гри: переважно піхота з невеликою часткою бігунів.
+              if (roll < 0.6) {
+                queue.push({ type: 'NORMAL', delay: 0.55, hp: Math.round(65 * hpScale), speed: 64, reward: 11 + Math.floor(w * 0.8), radius: 11, color: '#22c55e' });
+              } else {
+                queue.push({ type: 'FAST', delay: 0.45, hp: Math.round(42 * hpScale), speed: 96, reward: 10 + Math.floor(w * 0.8), radius: 9, color: '#f59e0b' });
+              }
+            } else if (w <= 9) {
+              // Нормальна фаза поступово вводить більше бігунів і танків.
+              if (roll < 0.50) {
+                queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(75 * hpScale), speed: 65, reward: 12 + Math.floor(w * 0.8), radius: 11, color: '#22c55e' });
+              } else if (roll < 0.80) {
+                queue.push({ type: 'FAST', delay: 0.4, hp: Math.round(50 * hpScale), speed: 100, reward: 11 + Math.floor(w * 0.8), radius: 9, color: '#f59e0b' });
+              } else {
+                queue.push({ type: 'TANK', delay: 0.65, hp: Math.round(200 * hpScale), speed: 45, reward: 22 + Math.floor(w * 1.0), radius: 14, color: '#64748b' });
+              }
+            } else {
+              // Late waves favor tanks and runners; waves 20-25 are the densest.
+              const normalChance = w >= 20 ? 0.20 : 0.25;
+              const fastChance = w >= 20 ? 0.55 : 0.60;
+              if (roll < normalChance) {
+                queue.push({ type: 'NORMAL', delay: 0.5, hp: Math.round(90 * hpScale), speed: 67, reward: 15 + Math.floor(w * 0.9), radius: 11, color: '#22c55e' });
+              } else if (roll < fastChance) {
+                queue.push({ type: 'FAST', delay: 0.38, hp: Math.round(65 * hpScale), speed: 104, reward: 15 + Math.floor(w * 0.9), radius: 9, color: '#f59e0b' });
+              } else {
+                queue.push({ type: 'TANK', delay: 0.6, hp: Math.round(230 * hpScale), speed: 46, reward: 26 + Math.floor(w * 1.1), radius: 14, color: '#64748b' });
+              }
+            }
+          }
+        }
+
+        // Difficulty scales all queued units consistently, bosses included.
+        queue.forEach(enemy => {
+          if (Number.isFinite(enemy.hp)) enemy.hp = Math.max(1, Math.round(enemy.hp * difficulty.healthMultiplier));
+          if (Number.isFinite(enemy.maxHp)) enemy.maxHp = Math.max(1, Math.round(enemy.maxHp * difficulty.healthMultiplier));
+          if (Number.isFinite(enemy.speed)) enemy.speed = Math.max(1, Math.round(enemy.speed * difficulty.speedMultiplier * 10) / 10);
+          if (Number.isFinite(enemy.reward)) enemy.reward = Math.max(1, Math.round(enemy.reward * difficulty.killGoldMultiplier));
+          if (Number.isFinite(enemy.delay)) enemy.delay = Math.max(0.2, enemy.delay * difficulty.spawnDelayMultiplier);
+        });
+
+        waves.push({
+          waveNum: w,
+          title,
+          isBossWave,
+          reward,
+          queue
+        });
+      }
+
+      return waves;
+    }
+
+    // ========== ГЕНЕРАЦІЯ ХВИЛЬ ДЛЯ КАРТИ «ВІЙСЬКОВИЙ ПОРТ» (30 ХВИЛЬ) ==========
+    function generatePortWaveConfig() {
+      const waves = [];
+
+      // Базові параметри морських ворогів
+      const NAVAL_ENEMIES = {
+        MARINE:    { type: 'MARINE',    name: 'Морський піхотинець', delay: 0.55, hp: 70,   speed: 65,  reward: 12, radius: 11, color: '#4ade80',  livesPenalty: 1 },
+        ARMORED:   { type: 'ARMORED',   name: 'Броньований солдат',  delay: 0.70, hp: 260,  speed: 38,  reward: 22, radius: 14, color: '#64748b',  livesPenalty: 2, armor: 0.35 },
+        ROCKET_S:  { type: 'ROCKET_S',  name: 'Ракетний солдат',     delay: 0.60, hp: 90,   speed: 55,  reward: 18, radius: 12, color: '#f59e0b',  livesPenalty: 1, canShootTower: true, shootRate: 8.0, shootDmg: 45 },
+        LANDING:   { type: 'LANDING',   name: 'Десантний катер',     delay: 1.20, hp: 350,  speed: 48,  reward: 35, radius: 18, color: '#0ea5e9',  livesPenalty: 3, spawnOnDeath: { count: 3, type: 'MARINE' } },
+        SUBMARINE: { type: 'SUBMARINE', name: 'Підводний човен',     delay: 1.50, hp: 500,  speed: 42,  reward: 45, radius: 17, color: '#1e3a5f',  livesPenalty: 3, isSubmerged: true },
+        DESTROYER: { type: 'DESTROYER', name: 'Важкий есмінець',     delay: 2.00, hp: 1200, speed: 28,  reward: 80, radius: 22, color: '#1e40af',  livesPenalty: 5, armor: 0.25, canShootTower: true, shootRate: 6.0, shootDmg: 80, splash: 50 }
+      };
+
+      for (let w = 1; w <= 30; w++) {
+        let title = `Хвиля ${w} — Морська атака`;
+        let queue = [];
+        const hm = 0.80 + (w - 1) * 0.085;  // HP scale
+        const sm = 0.90 + (w - 1) * 0.012;  // Speed scale
+        const rm = 1.00 + (w - 1) * 0.04;   // Reward scale
+        const dm = Math.max(0.55, 1.00 - (w - 1) * 0.015); // Delay scale
+
+        const mk = (base, hpMul = 1) => ({
+          ...base,
+          hp: Math.round(base.hp * hm * hpMul),
+          speed: Math.round(base.speed * sm * 10) / 10,
+          reward: Math.round(base.reward * rm),
+          delay: Math.max(0.25, base.delay * dm)
+        });
+
+        let isBossWave = false;
+        let reward = Math.round(60 + w * 10 + Math.pow(Math.max(0, w - 10), 1.3) * 3);
+
+        // ========== БОС-ХВИЛІ ==========
+        if (w === 10) {
+          isBossWave = true;
+          title = 'ХВИЛЯ 10: БОС — ДЕСАНТНИЙ ФЛОТ';
+          // Два важких десантних катери + ескорт
+          for (let i = 0; i < 4; i++) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+          queue.push(mk({ ...NAVAL_ENEMIES.LANDING, hp: 900, reward: 160, livesPenalty: 5, spawnOnDeath: { count: 5, type: 'MARINE' } }));
+          queue.push(mk({ ...NAVAL_ENEMIES.LANDING, hp: 900, reward: 160, livesPenalty: 5, spawnOnDeath: { count: 5, type: 'MARINE' } }));
+          for (let i = 0; i < 6; i++) queue.push(mk(NAVAL_ENEMIES.ROCKET_S));
+          reward = 300;
+
+        } else if (w === 20) {
+          isBossWave = true;
+          title = 'ХВИЛЯ 20: БОС — ПІДВОДНА ЗАГРОЗА';
+          for (let i = 0; i < 4; i++) queue.push(mk(NAVAL_ENEMIES.DESTROYER, 1.3));
+          queue.push(mk({ ...NAVAL_ENEMIES.SUBMARINE, hp: 4000, reward: 350, livesPenalty: 8, isSubmerged: true }));
+          queue.push(mk({ ...NAVAL_ENEMIES.SUBMARINE, hp: 4000, reward: 350, livesPenalty: 8, isSubmerged: true }));
+          for (let i = 0; i < 8; i++) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+          reward = 500;
+
+        } else if (w === 30) {
+          // ========== ФІНАЛЬНИЙ БОС: АДМІРАЛ (АВІАНОСЕЦЬ) ==========
+          isBossWave = true;
+          title = '💀 ХВИЛЯ 30: ФІНАЛЬНИЙ БОС — АДМІРАЛ';
+
+          // Авангард
+          for (let i = 0; i < 6; i++) queue.push(mk(NAVAL_ENEMIES.DESTROYER, 1.5));
+          for (let i = 0; i < 8; i++) queue.push(mk(NAVAL_ENEMIES.ARMORED, 1.4));
+
+          // АДМІРАЛ — авіаносець
+          queue.push({
+            type: 'BOSS',
+            id: 'ADMIRAL',
+            name: 'Адмірал',
+            title: 'Авіаносець «Адмірал» — Морський Колос',
+            maxHp: 55000,
+            hp: Math.round(55000 * hm),
+            speed: 22,
+            radius: 36,
+            reward: 1500,
+            livesPenalty: 20,
+            armor: 0.30,
+            color: '#1e40af',
+            coreColor: '#fbbf24',
+            delay: 2.5,
+            // Бос-механіки
+            canShootTower: true,
+            shootRate: 4.0,
+            shootDmg: 120,
+            splash: 80,
+            canLaunchAircraft: true,
+            aircraftRate: 12.0,
+            aircraftCount: 4,
+            canCallReinforcements: true,
+            reinforceRate: 18.0,
+            // Фаза 2 при 50% HP
+            phase2Threshold: 0.50,
+            phase2Activated: false,
+            // Фаза 3 при 20% HP
+            phase3Threshold: 0.20,
+            phase3Activated: false
+          });
+
+          // Хвиля підкріплення після боса
+          for (let i = 0; i < 10; i++) queue.push(mk(NAVAL_ENEMIES.MARINE, 1.8));
+          for (let i = 0; i < 4; i++) queue.push(mk(NAVAL_ENEMIES.ROCKET_S, 1.5));
+          reward = 1000;
+
+        } else {
+          // Звичайні хвилі — прогресивний склад
+          const count = Math.round(15 + w * 1.2);
+          for (let i = 0; i < count; i++) {
+            const roll = Math.random();
+            if (w <= 3) {
+              queue.push(mk(NAVAL_ENEMIES.MARINE));
+            } else if (w <= 6) {
+              queue.push(roll < 0.70 ? mk(NAVAL_ENEMIES.MARINE) : mk(NAVAL_ENEMIES.ARMORED));
+            } else if (w <= 9) {
+              if (roll < 0.45) queue.push(mk(NAVAL_ENEMIES.MARINE));
+              else if (roll < 0.75) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+              else queue.push(mk(NAVAL_ENEMIES.ROCKET_S));
+            } else if (w <= 14) {
+              if (roll < 0.30) queue.push(mk(NAVAL_ENEMIES.MARINE));
+              else if (roll < 0.55) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+              else if (roll < 0.75) queue.push(mk(NAVAL_ENEMIES.ROCKET_S));
+              else if (roll < 0.90) queue.push(mk(NAVAL_ENEMIES.LANDING));
+              else queue.push(mk(NAVAL_ENEMIES.SUBMARINE));
+            } else if (w <= 19) {
+              if (roll < 0.20) queue.push(mk(NAVAL_ENEMIES.MARINE));
+              else if (roll < 0.40) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+              else if (roll < 0.58) queue.push(mk(NAVAL_ENEMIES.ROCKET_S));
+              else if (roll < 0.72) queue.push(mk(NAVAL_ENEMIES.LANDING));
+              else if (roll < 0.86) queue.push(mk(NAVAL_ENEMIES.SUBMARINE));
+              else queue.push(mk(NAVAL_ENEMIES.DESTROYER));
+            } else if (w <= 24) {
+              if (roll < 0.18) queue.push(mk(NAVAL_ENEMIES.MARINE));
+              else if (roll < 0.36) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+              else if (roll < 0.52) queue.push(mk(NAVAL_ENEMIES.ROCKET_S));
+              else if (roll < 0.64) queue.push(mk(NAVAL_ENEMIES.LANDING));
+              else if (roll < 0.78) queue.push(mk(NAVAL_ENEMIES.SUBMARINE));
+              else queue.push(mk(NAVAL_ENEMIES.DESTROYER));
+            } else {
+              // Хвилі 25-29: масовий наступ
+              if (roll < 0.10) queue.push(mk(NAVAL_ENEMIES.MARINE));
+              else if (roll < 0.28) queue.push(mk(NAVAL_ENEMIES.ARMORED));
+              else if (roll < 0.46) queue.push(mk(NAVAL_ENEMIES.ROCKET_S));
+              else if (roll < 0.60) queue.push(mk(NAVAL_ENEMIES.LANDING));
+              else if (roll < 0.76) queue.push(mk(NAVAL_ENEMIES.SUBMARINE));
+              else queue.push(mk(NAVAL_ENEMIES.DESTROYER));
+            }
+          }
+        }
+
+        // Оголошення важливих хвиль
+        if (w === 5) title = '⚠️ Хвиля 5 — Перша підводна загроза!';
+        if (w === 15) title = '⚠️ Хвиля 15 — Есмінці атакують!';
+        if (w === 25) title = '⚠️ Хвиля 25 — Масовий штурм!';
+
+        waves.push({ waveNum: w, title, isBossWave, reward, queue });
+      }
+
+      return waves;
+    }
+
+    /* ==========================================================================
+       5. КЛАСИ ДЛЯ ГРИ (ВОРОГИ, ВЕЖІ, СНАРЯДИ, ЧАСТИНКИ)
+       ========================================================================== */
+
+    // Клас частинок для вибухів, диму, іскор та тексту урону
+    class Particle {
+      constructor(x, y, vx, vy, color, life, size, isText = false, text = '') {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.color = color;
+        this.life = life;
+        this.maxLife = life;
+        this.size = size;
+        this.isText = isText;
+        this.text = text;
+      }
+
+      update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        if (!this.isText) {
+          this.vx *= 0.96;
+          this.vy *= 0.96;
+        } else {
+          this.vy -= 10 * dt; // Текст плавно спливає вгору
+        }
+        this.life -= dt;
+      }
+
+      draw(ctx) {
+        const alpha = Math.max(0, this.life / this.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        if (this.isText) {
+          ctx.font = `bold ${Math.round(this.size)}px sans-serif`;
+          ctx.fillStyle = this.color;
+          ctx.textAlign = 'center';
+          ctx.shadowColor = '#000';
+          ctx.shadowBlur = 4;
+          ctx.fillText(this.text, this.x, this.y);
+        } else {
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, Math.max(0.5, this.size * alpha), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Клас снарядів (Стріли, Гарматні ядра, Магічні кулі)
+    class Projectile {
+      constructor(type, x, y, target, damage, speed, options = {}) {
+        this.type = type;
+        this.x = x;
+        this.y = y;
+        this.startX = x;
+        this.startY = y;
+        this.target = target;
+        this.targetPos = { x: target.x, y: target.y };
+        this.damage = damage;
+        this.speed = speed;
+        this.options = options;
+        this.dead = false;
+
+        // Для параболічної траєкторії гармати
+        this.totalDist = Math.hypot(target.x - x, target.y - y);
+        this.distTraveled = 0;
+      }
+
+      update(dt, game) {
+        if (this.dead) return;
+
+        if (this.type === 'TESLA') {
+          this.hit(game);
+          return;
+        }
+
+        // Оновлюємо координату рухомої цілі для самонавідних стріл і магії
+        if (this.target && !this.target.dead) {
+          this.targetPos = { x: this.target.x, y: this.target.y };
+        }
+
+        const dx = this.targetPos.x - this.x;
+        const dy = this.targetPos.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        const step = this.speed * dt;
+
+        if (dist <= step || dist < 8) {
+          this.hit(game);
+          return;
+        }
+
+        this.x += (dx / dist) * step;
+        this.y += (dy / dist) * step;
+        this.distTraveled += step;
+
+        // Хвіст для снарядів
+        if (Math.random() < 0.6) {
+          let pColor = '#ffffff';
+          if (this.type === 'CANNON') pColor = '#f97316';
+          if (this.type === 'MAGE') pColor = '#67e8f9';
+          game.addParticle(this.x, this.y, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, pColor, 0.25, 2.5);
+        }
+      }
+
+      hit(game) {
+        this.dead = true;
+
+        if (this.type === 'ARCHER') {
+          audio.shootArrow();
+          if (this.target && !this.target.dead) {
+            this.target.takeDamage(this.damage, game, 'PHYSICAL');
+          }
+          for (let i = 0; i < 5; i++) {
+            game.addParticle(this.targetPos.x, this.targetPos.y, (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80, '#38bdf8', 0.25, 2.5);
+          }
+        }
+        else if (this.type === 'UNIT_SHOT') {
+          const origin = this.options.rangeOrigin;
+          const maxRange = this.options.attackRange;
+          const inAttackRange = enemy => !origin || Math.hypot(enemy.x - origin.x, enemy.y - origin.y) <= maxRange;
+          if (this.options.splash) {
+            game.enemies.forEach(enemy => {
+              if (enemy.dead || !inAttackRange(enemy) || (enemy.isSubmerged && !this.options.canTargetSub)) return;
+              const distance = Math.hypot(enemy.x - this.targetPos.x, enemy.y - this.targetPos.y);
+              if (distance <= this.options.splash) {
+                const falloff = 1 - (distance / this.options.splash) * 0.35;
+                enemy.takeDamage(Math.max(1, Math.round(this.damage * falloff)), game, this.options.damageType || 'PHYSICAL');
+                if (this.options.dotDamage) {
+                  enemy.applyPoison(this.options.dotDamage, this.options.dotTicks, this.options.dotInterval);
+                }
+              }
+            });
+          } else if (this.target && !this.target.dead && inAttackRange(this.target)) {
+            this.target.takeDamage(this.damage, game, this.options.damageType || 'PHYSICAL');
+            if (this.options.dotDamage) {
+              this.target.applyPoison(this.options.dotDamage, this.options.dotTicks, this.options.dotInterval);
+            }
+          }
+          game.addParticle(this.targetPos.x, this.targetPos.y, 0, -18, this.options.color || '#fbbf24', 0.25, 5);
+        }
+        else if (this.type === 'CANNON') {
+          audio.explosion();
+          // Урон по області (Splash)
+          const splash = this.options.splash || 60;
+          game.enemies.forEach(e => {
+            const d = Math.hypot(e.x - this.targetPos.x, e.y - this.targetPos.y);
+            if (d <= splash) {
+              const falloff = 1 - (d / splash) * 0.4; // 100% у центрі, 60% на краю
+              e.takeDamage(Math.round(this.damage * falloff), game, 'EXPLOSIVE');
+            }
+          });
+
+          // Ефект вибуху
+          for (let i = 0; i < 20; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 20 + Math.random() * 120;
+            const col = Math.random() > 0.4 ? '#f97316' : '#ef4444';
+            game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * spd, Math.sin(ang) * spd, col, 0.4, 4);
+          }
+        }
+        else if (this.type === 'MAGE') {
+          audio.enemyHit();
+          if (this.target && !this.target.dead) {
+            this.target.takeDamage(this.damage, game, 'MAGIC');
+            this.target.applySlow(this.options.slow || 0.4, this.options.slowDuration || 2.5);
+            if (this.options.freezeDuration) this.target.applyFreeze(this.options.freezeDuration);
+          }
+          // Спалах магії
+          for (let i = 0; i < 10; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 30 + Math.random() * 70;
+            game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * spd, Math.sin(ang) * spd, '#c084fc', 0.35, 3);
+          }
+        }
+        else if (this.type === 'SNIPER') {
+          // Снайперський постріл: великий урон, можливий крит на рівні 4
+          audio.shootArrow(); // Різкий звук
+          if (this.target && !this.target.dead) {
+            let dmg = this.damage;
+            let isCrit = false;
+            if (this.options.critChance && Math.random() < this.options.critChance) {
+              dmg = Math.round(dmg * 2.5);
+              isCrit = true;
+            }
+            this.target.takeDamage(dmg, game, 'PHYSICAL');
+            if (isCrit) {
+              // Золотий спалах критичного пострілу
+              for (let i = 0; i < 18; i++) {
+                const ang = Math.random() * Math.PI * 2;
+                game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * 100, Math.sin(ang) * 100, '#f59e0b', 0.5, 4);
+              }
+              game.addParticle(this.targetPos.x, this.targetPos.y - 20, 0, -40, '#fbbf24', 0.9, 16, true, `💥КРИТ!`);
+            } else {
+              for (let i = 0; i < 7; i++) {
+                game.addParticle(this.targetPos.x, this.targetPos.y, (Math.random() - 0.5) * 80, (Math.random() - 0.5) * 80, '#bef264', 0.3, 3);
+              }
+            }
+          }
+        }
+        else if (this.type === 'TESLA') {
+          // One chain tracks victims explicitly and stops safely if a hit kills its target.
+          const hitEnemies = new Set();
+          let current = this.target;
+          let previousPoint = { x: this.x, y: this.y };
+          for (let jump = 0; jump < this.options.chainCount && current && !current.dead; jump++) {
+            hitEnemies.add(current);
+            game.addLightningEffect(previousPoint, { x: current.x, y: current.y });
+            current.takeDamage(Math.max(1, Math.round(this.damage * Math.pow(0.78, jump))), game, 'MAGIC');
+            if (this.options.stunDuration) current.applyStun(this.options.stunDuration);
+            previousPoint = { x: current.x, y: current.y };
+            if (current.dead || jump === this.options.chainCount - 1) break;
+            const source = current;
+            current = game.enemies
+              .filter(enemy => !enemy.dead && !hitEnemies.has(enemy))
+              .map(enemy => ({ enemy, distance: Math.hypot(enemy.x - source.x, enemy.y - source.y) }))
+              .filter(candidate => candidate.distance <= this.options.chainRange)
+              .sort((a, b) => a.distance - b.distance)[0]?.enemy || null;
+          }
+        }
+        else if (this.type === 'POISON') {
+          // Отруйна куля: накладає DoT
+          audio.enemyHit();
+          if (this.target && !this.target.dead) {
+            const opts = this.options;
+            this.target.applyPoison(opts.dotDamage, opts.dotTicks, opts.dotInterval);
+            if (opts.poisonSlow) {
+              this.target.applySlow(opts.poisonSlow, opts.dotTicks * opts.dotInterval);
+            }
+            for (let i = 0; i < 12; i++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = 15 + Math.random() * 55;
+              game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang) * spd, Math.sin(ang) * spd, '#4ade80', 0.55, 3.5);
+            }
+          }
+        }
+        else if (this.type === 'COASTAL_SHELL' || this.type === 'ROCKET' || this.type === 'DRONE_SHOT') {
+          // Морські вежі — вибуховий урон по площі
+          audio.explosion();
+          const splash = this.options.splash || 60;
+          game.enemies.forEach(e => {
+            // Підводні човни не вражаються звичайним зброєю, лише дроном
+            if (e.isSubmerged && this.type !== 'DRONE_SHOT') return;
+            const d = Math.hypot(e.x - this.targetPos.x, e.y - this.targetPos.y);
+            if (d <= splash) {
+              const falloff = 1 - (d / splash) * 0.35;
+              e.takeDamage(Math.round(this.damage * falloff), game, 'EXPLOSIVE');
+            }
+          });
+          // Ефект вибуху — кольори залежать від типу
+          const col1 = this.type === 'DRONE_SHOT' ? '#c084fc' : (this.type === 'ROCKET' ? '#38bdf8' : '#f97316');
+          const col2 = this.type === 'DRONE_SHOT' ? '#a855f7' : (this.type === 'ROCKET' ? '#0ea5e9' : '#ef4444');
+          for (let i = 0; i < 22; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 25 + Math.random() * 110;
+            game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang)*spd, Math.sin(ang)*spd, Math.random()>0.4 ? col1 : col2, 0.45, 4);
+          }
+          game.shakeScreen(0.15);
+        }
+        else if (this.type === 'ENEMY_ROCKET') {
+          // Ракета ворога по вежі — попередження + вибух
+          audio.explosion();
+          game.shakeScreen(0.25);
+          if (this.options.isTowerAttack) {
+            // Вежа отримує «удар» — відображається частинками
+            game.addParticle(this.targetPos.x, this.targetPos.y - 10, 0, -35, '#ef4444', 1.0, 16, true, `⚠️ РАКЕТА!`);
+          }
+          const splash = this.options.splash || 50;
+          game.enemies.forEach(e => {
+            if (!e.dead && Math.hypot(e.x - this.targetPos.x, e.y - this.targetPos.y) <= splash) {
+              e.takeDamage(Math.round(this.damage * 0.4), game, 'EXPLOSIVE');
+            }
+          });
+          for (let i = 0; i < 18; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 25 + Math.random() * 100;
+            game.addParticle(this.targetPos.x, this.targetPos.y, Math.cos(ang)*spd, Math.sin(ang)*spd, Math.random()>0.4 ? '#ef4444':'#f97316', 0.5, 4);
+          }
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        if (this.type === 'ARCHER') {
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillRect(-8, -2, 16, 4);
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.moveTo(8, -3);
+          ctx.lineTo(13, 0);
+          ctx.lineTo(8, 3);
+          ctx.fill();
+        }
+        else if (this.type === 'CANNON') {
+          ctx.fillStyle = '#1e293b';
+          ctx.strokeStyle = '#f97316';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        else if (this.type === 'MAGE') {
+          ctx.fillStyle = '#a855f7';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'SNIPER') {
+          // Довгий трасувальний слід снайперської кулі
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          // Слід (зеленувато-жовтий промінь)
+          const grad = ctx.createLinearGradient(-28, 0, 2, 0);
+          grad.addColorStop(0, 'rgba(190,242,100,0)');
+          grad.addColorStop(1, 'rgba(190,242,100,0.9)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(-28, -1.5, 30, 3);
+          // Куля
+          ctx.fillStyle = '#bef264';
+          ctx.shadowColor = '#84cc16';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(2, 0, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'POISON') {
+          ctx.fillStyle = '#22c55e';
+          ctx.shadowColor = '#4ade80';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#86efac';
+          ctx.beginPath();
+          ctx.arc(this.x - 1.5, this.y - 1.5, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'COASTAL_SHELL') {
+          // Великий артилерійський снаряд з вогняним хвостом
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(-10, -4, 20, 8);
+          ctx.fillStyle = '#f97316';
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(10, 0, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'ROCKET') {
+          // Самонавідна ракета
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(-12, -3, 18, 6);
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#0ea5e9';
+          ctx.shadowBlur = 14;
+          ctx.beginPath();
+          ctx.moveTo(6, -5);
+          ctx.lineTo(14, 0);
+          ctx.lineTo(6, 5);
+          ctx.closePath();
+          ctx.fill();
+          // Вогняний хвіст
+          ctx.fillStyle = 'rgba(251,146,60,0.8)';
+          ctx.beginPath();
+          ctx.moveTo(-12, -3);
+          ctx.lineTo(-20, 0);
+          ctx.lineTo(-12, 3);
+          ctx.fill();
+        }
+        else if (this.type === 'DRONE_SHOT') {
+          // Лазерний промінь дрону
+          ctx.strokeStyle = '#c084fc';
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 16;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y);
+          ctx.lineTo(this.targetPos.x, this.targetPos.y);
+          ctx.stroke();
+          ctx.fillStyle = '#c084fc';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        else if (this.type === 'ENEMY_ROCKET') {
+          // Ракета ворога — червона, з яскравим хвостом
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#ef4444';
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 14;
+          ctx.fillRect(-8, -3, 16, 6);
+          ctx.beginPath();
+          ctx.moveTo(8, -4);
+          ctx.lineTo(14, 0);
+          ctx.lineTo(8, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = 'rgba(249,115,22,0.85)';
+          ctx.beginPath();
+          ctx.moveTo(-8, -2.5);
+          ctx.lineTo(-16, 0);
+          ctx.lineTo(-8, 2.5);
+          ctx.fill();
+        }
+        else if (this.type === 'UNIT_SHOT') {
+          const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
+          ctx.translate(this.x, this.y);
+          ctx.rotate(angle);
+          ctx.fillStyle = this.options.color || '#fbbf24';
+          ctx.shadowColor = this.options.color || '#fbbf24';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 6, 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    // Клас ворогів (Звичайні, Швидкі, Танки та Боси + морські типи)
+    class Enemy {
+      constructor(data, pathPixelPoints) {
+        if (data.type === 'BOMBER') {
+          const exit = pathPixelPoints[pathPixelPoints.length - 1];
+          const target = { x: Math.max(40, Math.min(960, exit.x)), y: Math.max(40, Math.min(560, exit.y)) };
+          pathPixelPoints = [{ x: target.x > 500 ? -40 : 1040, y: 60 + Math.random() * 480 }, target];
+        }
+        this.type = data.type;
+        this.name = data.name || (data.type === 'NORMAL' ? 'Піхотинець' : (data.type === 'FAST' ? 'Бігун' : 'Танк'));
+        this.maxHp = data.hp || data.maxHp;
+        this.hp = this.maxHp;
+        this.speed = data.speed;
+        this.baseSpeed = data.speed;
+        this.reward = data.reward;
+        this.radius = data.radius || 12;
+        this.livesPenalty = data.livesPenalty || 1;
+        this.armor = data.armor || 0;
+        this.regenPerSec = data.regenPerSec || 0;
+        this.color = data.color || '#22c55e';
+        this.coreColor = data.coreColor || '#fff';
+        this.isBoss = data.type === 'BOSS';
+        this.bossId = data.id || null;
+
+        this.path = pathPixelPoints;
+        this.pathIndex = 0;
+        this.heading = 0;
+        this.navalSprite = NavalArt.shipTypes[this.bossId || this.type];
+        this.x = pathPixelPoints[0].x;
+        this.y = pathPixelPoints[0].y;
+        this.dead = false;
+        this.reachedEnd = false;
+
+        // Статуси
+        this.slowTimer = 0;
+        this.slowFactor = 0;
+        this.freezeTimer = 0;
+        this.animTimer = Math.random() * 10;
+
+        // Стан отрути
+        this.poisonTicks = 0;
+        this.poisonDamagePerTick = 0;
+        this.poisonInterval = 0.7;
+        this.poisonTimer = 0;
+
+        // Параліч від Тесла
+        this.stunTimer = 0;
+
+        // ===== МОРСЬКІ ВЛАСТИВОСТІ =====
+        // Підводний човен — напівпрозорий рух під водою
+        this.isSubmerged = data.isSubmerged || false;
+        this.submergeAlpha = this.isSubmerged ? 0.35 : 1.0;
+
+        // Десантний катер — при смерті спавнить морпіхів
+        this.spawnOnDeath = data.spawnOnDeath || null;
+
+        // Ракетний атакувальник веж
+        this.canShootTower = data.canShootTower || false;
+        this.shootRate   = data.shootRate || 8.0;
+        this.shootTimer  = Math.random() * (data.shootRate || 8.0);
+        this.shootDmg    = data.shootDmg || 40;
+        this.shootSplash = data.splash || 0;
+
+        // ===== АДМІРАЛ (авіаносець) =====
+        this.canLaunchAircraft     = data.canLaunchAircraft || false;
+        this.aircraftRate          = data.aircraftRate || 12;
+        this.aircraftTimer         = Math.random() * (data.aircraftRate || 12);
+        this.aircraftCount         = data.aircraftCount || 3;
+        this.canCallReinforcements = data.canCallReinforcements || false;
+        this.reinforceRate         = data.reinforceRate || 18;
+        this.reinforceTimer        = Math.random() * (data.reinforceRate || 18);
+        this.phase2Threshold       = data.phase2Threshold || 0;
+        this.phase2Activated       = false;
+        this.phase3Threshold       = data.phase3Threshold || 0;
+        this.phase3Activated       = false;
+
+        // Масив активних авіаударів (кожен: { x, y, timer, warningTimer })
+        this.aircraftStrikes = [];
+      }
+
+      applySlow(factor, duration) {
+        if (factor > this.slowFactor || this.slowTimer <= 0) {
+          this.slowFactor = factor;
+          this.slowTimer = duration;
+        }
+      }
+
+      // Freeze is separate from slow so the brief stop is not diluted by movement modifiers.
+      applyFreeze(duration) {
+        if (!this.dead) this.freezeTimer = Math.max(this.freezeTimer, duration);
+      }
+
+      // Застосувати отруту (DoT) — підсумовує тіки, якщо нова отрута сильніша
+      applyPoison(damagePerTick, ticks, interval) {
+        if (this.dead) return;
+        if (damagePerTick >= this.poisonDamagePerTick || this.poisonTicks === 0) {
+          this.poisonDamagePerTick = damagePerTick;
+          this.poisonInterval = interval;
+        }
+        this.poisonTimer = this.poisonInterval;
+        this.poisonTicks = Math.max(this.poisonTicks, ticks);
+      }
+
+      // Застосувати паралізуючий удар (від Tesla L4)
+      applyStun(duration) {
+        this.stunTimer = Math.max(this.stunTimer, duration);
+      }
+
+      takeDamage(amount, game, damageType = 'PHYSICAL') {
+        if (this.dead || amount <= 0) return;
+        let finalDamage = amount;
+        if (this.armor > 0) {
+          finalDamage = Math.round(amount * (1 - this.armor));
+        }
+
+        this.hp -= finalDamage;
+
+        // Спливаючий текст урону
+        let txtColor = '#ffffff';
+        if (damageType === 'EXPLOSIVE') txtColor = '#f97316';
+        if (damageType === 'MAGIC') txtColor = '#c084fc';
+        if (damageType === 'POISON') txtColor = '#4ade80';
+        if (this.armor > 0) txtColor = '#94a3b8';
+
+        game.addParticle(
+          this.x + (Math.random() - 0.5) * 16,
+          this.y - 12,
+          (Math.random() - 0.5) * 10,
+          -30,
+          txtColor,
+          0.6,
+          11,
+          true,
+          `-${finalDamage}`
+        );
+
+        if (this.hp <= 0 && !this.dead) {
+          this.die(game);
+        }
+      }
+
+      die(game) {
+        this.dead = true;
+        audio.enemyKill();
+        game.energy += this.reward;
+        game.totalKills++;
+
+        // Текст золота
+        game.addParticle(this.x, this.y - 15, 0, -40, '#facc15', 0.8, 14, true, `+${this.reward}⚡`);
+
+        // Ефект спалаху частинок
+        const pCount = this.isBoss ? 60 : (this.type === 'DESTROYER' ? 28 : 12);
+        for (let i = 0; i < pCount; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 20 + Math.random() * (this.isBoss ? 200 : (this.type === 'DESTROYER' ? 110 : 70));
+          game.addParticle(this.x, this.y, Math.cos(ang) * spd, Math.sin(ang) * spd, this.color, 0.55, this.isBoss ? 6 : 3);
+        }
+
+        // Десантний катер: спавнить морпіхів
+        if (this.spawnOnDeath && game.pathPixelPoints) {
+          const spawnData = this.spawnOnDeath;
+          for (let i = 0; i < spawnData.count; i++) {
+            const newData = {
+              type: spawnData.type || 'MARINE',
+              name: 'Морський піхотинець',
+              hp: Math.round(70 * (1 + game.currentWaveIndex * 0.08)),
+              maxHp: Math.round(70 * (1 + game.currentWaveIndex * 0.08)),
+              speed: 65,
+              reward: 10,
+              radius: 11,
+              color: '#4ade80',
+              livesPenalty: 1,
+              delay: 0
+            };
+            const spawnedEnemy = new Enemy(newData, game.pathPixelPoints);
+            spawnedEnemy.x = this.x + (Math.random() - 0.5) * 20;
+            spawnedEnemy.y = this.y + (Math.random() - 0.5) * 20;
+            spawnedEnemy.pathIndex = this.pathIndex;
+            game.enemies.push(spawnedEnemy);
+          }
+        }
+
+        // Адмірал: серія вибухів
+        if (this.bossId === 'ADMIRAL') {
+          game.addParticle(500, 200, 0, -50, '#fbbf24', 2.0, 24, true, '🏆 АДМІРАЛ ЗНИЩЕНИЙ!');
+          game.shakeScreen(1.5);
+          for (let i = 0; i < 80; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 40 + Math.random() * 220;
+            const col = ['#f97316','#ef4444','#fbbf24','#38bdf8','#ffffff'][Math.floor(Math.random() * 5)];
+            game.addParticle(this.x + (Math.random()-0.5)*60, this.y + (Math.random()-0.5)*30,
+              Math.cos(ang)*spd, Math.sin(ang)*spd, col, 0.9, 5);
+          }
+          // Нагорода — скриня
+          game.addParticle(this.x, this.y - 30, 0, -55, '#f59e0b', 2.0, 18, true, '🎁 Скриня Адмірала!');
+        }
+      }
+
+      update(dt, game) {
+        if (this.dead) return;
+
+        this.animTimer += dt;
+
+        // ===== МОРСЬКІ МЕХАНІКИ =====
+
+        // Ракетна атака по вежах (Ракетний солдат, Есмінець, Адмірал)
+        if (this.canShootTower && game.towers && game.towers.length > 0) {
+          this.shootTimer -= dt;
+          if (this.shootTimer <= 0) {
+            this.shootTimer = this.shootRate;
+            // Вибрати найближчу вежу в радіусі
+            const range = this.isBoss ? 400 : 250;
+            const nearTowers = game.towers.filter(t => Math.hypot(t.x - this.x, t.y - this.y) <= range);
+            if (nearTowers.length > 0) {
+              const target = nearTowers[Math.floor(Math.random() * nearTowers.length)];
+              // Запустити ракетний снаряд
+              game.projectiles.push(new Projectile('ENEMY_ROCKET', this.x, this.y, target, this.shootDmg, 300, {
+                splash: this.shootSplash,
+                isTowerAttack: true
+              }));
+              // Спалах
+              game.addParticle(this.x, this.y - 10, 0, -20, '#ef4444', 0.3, 5);
+            }
+          }
+        }
+
+        // ===== АДМІРАЛ: ФАЗА 2 (50% HP) =====
+        if (this.bossId === 'ADMIRAL' && this.phase2Threshold > 0 && !this.phase2Activated) {
+          const hpPct = this.hp / this.maxHp;
+          if (hpPct <= this.phase2Threshold) {
+            this.phase2Activated = true;
+            this.shootRate   *= 0.6;
+            this.aircraftRate *= 0.6;
+            this.reinforceRate *= 0.7;
+            game.addParticle(this.x, this.y - 40, 0, -50, '#ef4444', 2.0, 18, true, '⚡ АДМІРАЛ: ФАЗА 2!');
+            game.shakeScreen(0.8);
+            audio.bossSpawn();
+          }
+        }
+
+        // ===== АДМІРАЛ: ФАЗА 3 (20% HP) =====
+        if (this.bossId === 'ADMIRAL' && this.phase3Threshold > 0 && !this.phase3Activated) {
+          const hpPct = this.hp / this.maxHp;
+          if (hpPct <= this.phase3Threshold) {
+            this.phase3Activated = true;
+            this.shootRate   *= 0.5;
+            // Фінальний ракетний залп: 6 ракет одночасно
+            if (game.towers && game.towers.length > 0) {
+              game.towers.slice(0, 6).forEach(t => {
+                game.projectiles.push(new Projectile('ENEMY_ROCKET', this.x, this.y, t, this.shootDmg * 2, 300, {
+                  splash: this.shootSplash * 1.5, isTowerAttack: true
+                }));
+              });
+            }
+            game.addParticle(this.x, this.y - 40, 0, -50, '#ef4444', 2.0, 20, true, '💀 ФІНАЛЬНИЙ РАКЕТНИЙ ЗАЛП!');
+            game.shakeScreen(1.2);
+            audio.bossSpawn();
+          }
+        }
+
+        // ===== АДМІРАЛ: ЗАПУСК ЛІТАКІВ =====
+        if (this.canLaunchAircraft) {
+          this.aircraftTimer -= dt;
+          if (this.aircraftTimer <= 0) {
+            this.aircraftTimer = this.aircraftRate;
+            const count = this.phase2Activated ? this.aircraftCount + 2 : this.aircraftCount;
+            for (let i = 0; i < count; i++) {
+              // Авіаудар: попередження → через 2.5с вибух
+              const tx = 80 + Math.random() * 840;
+              const ty = 80 + Math.random() * 440;
+              this.aircraftStrikes.push({ x: tx, y: ty, warningTimer: 2.5, timer: 2.5 });
+            }
+            game.addParticle(this.x, this.y - 30, 0, -40, '#fbbf24', 0.9, 14, true, `✈️ Авіаудар!`);
+          }
+
+          // Обробка активних авіаударів
+          for (let i = this.aircraftStrikes.length - 1; i >= 0; i--) {
+            const strike = this.aircraftStrikes[i];
+            strike.timer -= dt;
+            if (strike.timer <= 0) {
+              // Вибух — завдає шкоди вежам і ворогам у радіусі 70px
+              game.enemies.forEach(e => {
+                if (!e.dead && Math.hypot(e.x - strike.x, e.y - strike.y) <= 70) {
+                  e.takeDamage(50, game, 'EXPLOSIVE');
+                }
+              });
+              // Пошкодження веж (зображується частинками)
+              if (game.towers) {
+                game.towers.forEach(t => {
+                  if (Math.hypot(t.x - strike.x, t.y - strike.y) <= 70) {
+                    game.addParticle(t.x, t.y - 20, 0, -35, '#ef4444', 0.9, 14, true, `💥-${120}`);
+                    // Знаємо гроші від проданої вежі, але для спрощення просто показуємо попередження
+                  }
+                });
+              }
+              // Ефект вибуху
+              audio.explosion();
+              game.shakeScreen(0.3);
+              for (let p = 0; p < 25; p++) {
+                const ang = Math.random() * Math.PI * 2;
+                const spd = 30 + Math.random() * 130;
+                game.addParticle(strike.x, strike.y, Math.cos(ang)*spd, Math.sin(ang)*spd, Math.random() > 0.4 ? '#f97316' : '#ef4444', 0.55, 4.5);
+              }
+              this.aircraftStrikes.splice(i, 1);
+            }
+          }
+        }
+
+        // ===== АДМІРАЛ: ВИКЛИК ПІДКРІПЛЕНЬ =====
+        if (this.canCallReinforcements && game.pathPixelPoints) {
+          this.reinforceTimer -= dt;
+          if (this.reinforceTimer <= 0) {
+            this.reinforceTimer = this.reinforceRate;
+            // Спавн 4 броньованих солдат
+            for (let i = 0; i < 4; i++) {
+              const rData = {
+                type: 'ARMORED', name: 'Броньований солдат',
+                hp: Math.round(260 * (1 + game.currentWaveIndex * 0.08)),
+                maxHp: Math.round(260 * (1 + game.currentWaveIndex * 0.08)),
+                speed: 38, reward: 22, radius: 14, color: '#64748b',
+                livesPenalty: 2, armor: 0.35
+              };
+              const re = new Enemy(rData, game.pathPixelPoints);
+              re.pathIndex = Math.min(2, game.pathPixelPoints.length - 2);
+              re.x = game.pathPixelPoints[re.pathIndex].x + (Math.random()-0.5)*24;
+              re.y = game.pathPixelPoints[re.pathIndex].y + (Math.random()-0.5)*24;
+              game.enemies.push(re);
+            }
+            game.addParticle(this.x, this.y - 20, 0, -35, '#64748b', 0.9, 13, true, '🚢 Підкріплення!');
+          }
+        }
+
+        // Регенерація здоров'я
+        if (this.regenPerSec > 0 && this.hp < this.maxHp) {
+          const heal = this.regenPerSec * dt;
+          this.hp = Math.min(this.maxHp, this.hp + heal);
+          if (Math.random() < 0.25) {
+            game.addParticle(this.x + (Math.random() - 0.5) * 20, this.y + (Math.random() - 0.5) * 20, 0, -25, '#22c55e', 0.4, 2);
+          }
+        }
+
+        // Розрахунок поточної швидкості зі сповільненням
+        let currentSpeed = this.baseSpeed;
+
+        if (this.freezeTimer > 0) {
+          this.freezeTimer = Math.max(0, this.freezeTimer - dt);
+          currentSpeed = 0;
+          if (Math.random() < 0.5) {
+            game.addParticle(this.x + (Math.random() - 0.5) * 18, this.y + (Math.random() - 0.5) * 18, 0, -18, '#7dd3fc', 0.35, 3);
+          }
+        }
+
+        // Параліч від Тесла (рівень 4)
+        if (this.stunTimer > 0) {
+          this.stunTimer -= dt;
+          currentSpeed = 0;
+          if (Math.random() < 0.4) {
+            game.addParticle(this.x + (Math.random() - 0.5) * 16, this.y + (Math.random() - 0.5) * 16, 0, -15, '#fde047', 0.25, 2);
+          }
+        }
+
+        if (this.slowTimer > 0) {
+          this.slowTimer -= dt;
+          currentSpeed *= (1 - this.slowFactor);
+          // Частинки льоду
+          if (Math.random() < 0.3) {
+            game.addParticle(this.x, this.y, 0, 10, '#38bdf8', 0.3, 2);
+          }
+        }
+
+        // Тіки отруєння (DoT від Отруйної вежі)
+        if (this.poisonTicks > 0) {
+          this.poisonTimer -= dt;
+          if (this.poisonTimer <= 0) {
+            this.poisonTimer = this.poisonInterval;
+            this.poisonTicks--;
+            this.takeDamage(this.poisonDamagePerTick, game, 'POISON');
+            if (this.dead) return;
+            // Зелені хмарки отрути
+            for (let i = 0; i < 4; i++) {
+              const ang = Math.random() * Math.PI * 2;
+              game.addParticle(this.x + Math.cos(ang) * 8, this.y + Math.sin(ang) * 8, Math.cos(ang) * 20, Math.sin(ang) * 20, '#4ade80', 0.5, 3);
+            }
+          }
+        }
+
+        // Рух уздовж шляху
+        if (this.pathIndex < this.path.length - 1) {
+          const target = this.path[this.pathIndex + 1];
+          const dx = target.x - this.x;
+          const dy = target.y - this.y;
+          const dist = Math.hypot(dx, dy);
+          const step = currentSpeed * dt;
+          if (dist > 0 && step > 0) {
+            const turn = Math.atan2(dy, dx) - this.heading;
+            this.heading += Math.atan2(Math.sin(turn), Math.cos(turn)) * Math.min(1, dt * 8);
+          }
+
+          if (dist <= step) {
+            this.x = target.x;
+            this.y = target.y;
+            this.pathIndex++;
+            if (this.pathIndex >= this.path.length - 1) {
+              this.reachExit(game);
+            }
+          } else {
+            this.x += (dx / dist) * step;
+            this.y += (dy / dist) * step;
+          }
+        }
+      }
+
+      reachExit(game) {
+        if (this.dead) return;
+        this.dead = true;
+        this.reachedEnd = true;
+        game.lives = Math.max(0, game.lives - this.livesPenalty);
+        audio.lifeLost();
+
+        if (this.type === 'BOMBER') {
+          audio.explosion();
+          game.shakeScreen(0.4);
+          for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 40 + Math.random() * 100;
+            game.addParticle(this.x, this.y, Math.cos(angle) * speed, Math.sin(angle) * speed,
+              i % 2 ? '#f97316' : '#fbbf24', 0.6, 5);
+          }
+        }
+
+        game.addParticle(this.x, this.y - 20, 0, -45, '#ef4444', 1.0, 18, true, `-${this.livesPenalty} ❤️`);
+
+        // Тряска екрану при прориві боса
+        if (this.isBoss) {
+          game.shakeScreen(0.5);
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+
+        // Тінь
+        if (!this.navalSprite || !NavalArt.images[this.navalSprite]) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+          ctx.beginPath();
+          ctx.ellipse(this.x, this.y + this.radius * 0.75, this.radius, this.radius * 0.45, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Анімація дихання/кроку
+        const wobble = 1 + Math.sin(this.animTimer * 8) * 0.08;
+
+        // Основне тіло
+        const navalSpriteDrawn = (this.navalSprite && NavalArt.ship(ctx, this.navalSprite,
+          this.x, this.y, this.radius, this.heading, this.animTimer, this.isSubmerged,
+          this.freezeTimer <= 0 && this.stunTimer <= 0 && this.speed > 0)) ||
+          (!this.navalSprite && GameArt.enemy(ctx, this));
+        if (!navalSpriteDrawn) {
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius * wobble, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Poison is visible even between its damage ticks.
+        if (this.poisonTicks > 0) {
+          ctx.fillStyle = 'rgba(74, 222, 128, 0.22)';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 4 + Math.sin(this.animTimer * 5) * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(74, 222, 128, 0.9)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#86efac';
+          ctx.beginPath();
+          ctx.arc(this.x + this.radius * 0.7, this.y - this.radius - 3 + Math.sin(this.animTimer * 4) * 2, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Специфічний вигляд залежно від типу
+        if (navalSpriteDrawn) {
+          // Status rings and the health bar below apply to sprites too.
+        } else if (this.isBoss) {
+          // Зовнішнє сяйво та візерунок боса
+          ctx.strokeStyle = this.coreColor;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Очі боса
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(this.x - this.radius * 0.35, this.y - this.radius * 0.2, 3, 0, Math.PI * 2);
+          ctx.arc(this.x + this.radius * 0.35, this.y - this.radius * 0.2, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (this.bossId === 'BOSS_1' || this.bossId === 'BOSS_1_EVO') {
+            // Кам'яні / залізні щитки
+            ctx.fillStyle = this.bossId === 'BOSS_1_EVO' ? '#475569' : '#78716c';
+            ctx.fillRect(this.x - 8, this.y - 8, 16, 16);
+          } else if (this.bossId === 'BOSS_2' || this.bossId === 'BOSS_2_EVO') {
+            // Роги/Крила вампіра
+            ctx.strokeStyle = this.bossId === 'BOSS_2_EVO' ? '#9333ea' : '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(this.x - this.radius, this.y);
+            ctx.lineTo(this.x - this.radius - 8, this.y - 12);
+            ctx.moveTo(this.x + this.radius, this.y);
+            ctx.lineTo(this.x + this.radius + 8, this.y - 12);
+            ctx.stroke();
+          } else if (this.bossId === 'BOSS_3') {
+            // Архідемон: полум'яні роги та подвійне рунічне коло
+            ctx.strokeStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius + 5, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.radius + 8, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (this.bossId === 'ADMIRAL') {
+            // Величезний авіаносець "Адмірал": корпус, злітна смуга, радар, гармати, літаки на палубі
+            ctx.save();
+            ctx.fillStyle = '#0f172a';
+            // Довгий ніс корабля
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y, this.radius * 1.5, this.radius * 0.75, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Злітна смуга (позначки)
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(this.x - this.radius * 1.2, this.y - 2);
+            ctx.lineTo(this.x + this.radius * 1.2, this.y - 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Рубка авіаносця (командний місток)
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(this.x - 4, this.y - this.radius * 0.7, 16, 9);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(this.x, this.y - this.radius * 0.65, 4, 3);
+
+            // Радар, що крутиться
+            const rAng = Date.now() * 0.005;
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(this.x + 8, this.y - this.radius * 0.7);
+            ctx.lineTo(this.x + 8 + Math.cos(rAng) * 8, this.y - this.radius * 0.7 + Math.sin(rAng) * 4);
+            ctx.stroke();
+
+            // Гарматні башти на бортах
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.arc(this.x - this.radius * 0.7, this.y + this.radius * 0.45, 4, 0, Math.PI * 2);
+            ctx.arc(this.x + this.radius * 0.7, this.y + this.radius * 0.45, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Винищувач на палубі
+            ctx.fillStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(this.x - this.radius * 0.6, this.y - 4);
+            ctx.lineTo(this.x - this.radius * 0.4, this.y - 1);
+            ctx.lineTo(this.x - this.radius * 0.4, this.y - 7);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+          }
+        } else if (this.type === 'FAST') {
+          // Гострі бічні крила
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y - this.radius - 2);
+          ctx.lineTo(this.x - this.radius, this.y + this.radius);
+          ctx.lineTo(this.x + this.radius, this.y + this.radius);
+          ctx.closePath();
+          ctx.fill();
+        } else if (this.type === 'TANK') {
+          // Броньований квадрат
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(this.x - this.radius * 0.7, this.y - this.radius * 0.7, this.radius * 1.4, this.radius * 1.4);
+        } else if (this.type === 'MARINE') {
+          // Морський піхотинець: каска кольору хакі + шолом + гвинтівка
+          ctx.fillStyle = '#15803d';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y - 2, this.radius * 0.85, Math.PI, 0);
+          ctx.fill();
+          ctx.strokeStyle = '#166534';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Обличчя
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y + 2, 3, 0, Math.PI * 2);
+          ctx.fill();
+          // Зброя
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(this.x + 3, this.y - 1, 9, 3);
+        } else if (this.type === 'ARMORED') {
+          // Броньований солдат: металевий важкий щит і бронежилет
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(this.x - this.radius * 0.8, this.y - this.radius * 0.8, this.radius * 1.6, this.radius * 1.6);
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(this.x - this.radius * 0.6, this.y - this.radius * 0.6, this.radius * 1.2, this.radius * 1.2);
+          // Бронещит спереду
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(this.x + 4, this.y - 8, 5, 16);
+        } else if (this.type === 'ROCKET_S') {
+          // Ракетний солдат: характерна ракетна установка за плечем
+          ctx.fillStyle = '#ea580c';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+          // Ракетний тубус
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(this.x - 3, this.y - 12, 14, 5);
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(this.x + 11, this.y - 9.5, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'LANDING') {
+          // Десантний катер: плоский сталевий десантний корабель з апареллю
+          ctx.fillStyle = '#0369a1';
+          ctx.beginPath();
+          ctx.ellipse(this.x, this.y, this.radius * 1.3, this.radius * 0.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#bae6fd';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Відкрита палуба
+          ctx.fillStyle = '#075985';
+          ctx.fillRect(this.x - 8, this.y - 5, 16, 10);
+          // Солдати всередині (зелені точки)
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(this.x - 4, this.y, 2.5, 0, Math.PI * 2);
+          ctx.arc(this.x + 2, this.y, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (this.type === 'SUBMARINE') {
+          // Ворожий підводний човен: темний видовжений силует + перископ + хвилі
+          ctx.fillStyle = this.isSubmerged ? 'rgba(30, 58, 95, 0.65)' : '#0f172a';
+          ctx.beginPath();
+          ctx.ellipse(this.x, this.y, this.radius * 1.35, this.radius * 0.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          // Рубка субмарини
+          ctx.fillStyle = '#1e3a5f';
+          ctx.fillRect(this.x - 4, this.y - 8, 8, 6);
+          // Перископ
+          ctx.strokeStyle = '#94a3b8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y - 8);
+          ctx.lineTo(this.x, this.y - 13);
+          ctx.lineTo(this.x + 3, this.y - 13);
+          ctx.stroke();
+          // Водні хвилі навколо субмарини
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (this.type === 'DESTROYER') {
+          // Важкий есмінець: довгий військовий корабель з двома гарматами
+          ctx.fillStyle = '#1e3a8a';
+          ctx.beginPath();
+          ctx.ellipse(this.x, this.y, this.radius * 1.4, this.radius * 0.65, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#60a5fa';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Надбудова
+          ctx.fillStyle = '#3b82f6';
+          ctx.fillRect(this.x - 7, this.y - 5, 14, 10);
+          // Дві корабельні гармати
+          ctx.fillStyle = '#94a3b8';
+          ctx.beginPath();
+          ctx.arc(this.x - 12, this.y, 3.5, 0, Math.PI * 2);
+          ctx.arc(this.x + 12, this.y, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          // Стволи гармат
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(this.x - 12, this.y); ctx.lineTo(this.x - 18, this.y);
+          ctx.moveTo(this.x + 12, this.y); ctx.lineTo(this.x + 18, this.y);
+          ctx.stroke();
+        }
+
+        // Індикатор сповільнення (крижане кільце)
+        if (this.slowTimer > 0) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        if (this.freezeTimer > 0) {
+          ctx.strokeStyle = '#bae6fd';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius + 6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
+
+        // Смужка здоров'я над головою
+        const barW = Math.max(24, this.radius * 2.2);
+        const barH = this.isBoss ? 6 : 4;
+        const barX = this.x - barW / 2;
+        const barY = this.y - this.radius * (navalSpriteDrawn ? 1.55 : 1) - 10;
+        const hpPct = Math.max(0, this.hp / this.maxHp);
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        let barCol = '#22c55e';
+        if (hpPct < 0.3) barCol = '#ef4444';
+        else if (hpPct < 0.6) barCol = '#f59e0b';
+
+        ctx.fillStyle = barCol;
+        ctx.fillRect(barX, barY, barW * hpPct, barH);
+
+        ctx.restore();
+      }
+    }
+
+    // Клас Башти (Стрілець, Гармата, Маг з 4 рівнями прокачки)
+    class Tower {
+      constructor(typeId, gridCol, gridRow, tileSize) {
+        this.typeId = typeId;
+        this.col = gridCol;
+        this.row = gridRow;
+        this.tileSize = tileSize;
+        this.x = (gridCol + 0.5) * tileSize;
+        this.y = (gridRow + 0.5) * tileSize;
+        this.level = 1; // 1, 2, 3, 4
+        this.cooldown = 0;
+        this.target = null;
+        this.angle = 0;
+        this.investedEnergy = TOWER_TYPES[typeId].levels[0].cost;
+        this.storedEnergy = 0;
+        this.animRecoil = 0;
+        this.anchorX = this.x;
+        this.anchorY = this.y;
+        this.orbitAngle = Math.random() * Math.PI * 2;
+        this.animationTime = 0;
+        this.spawnCooldown = TOWER_TYPES[typeId].levels[0].spawnInterval || 0;
+      }
+
+      getConfig() {
+        return TOWER_TYPES[this.typeId];
+      }
+
+      getLevelData() {
+        return this.getConfig().levels[this.level - 1];
+      }
+
+      getNextLevelData() {
+        return this.canUpgrade() ? this.getConfig().levels[this.level] : null;
+      }
+
+      canUpgrade() {
+        const maxLvl = this.getConfig().levels.length;
+        return this.level < maxLvl;
+      }
+
+      getUpgradeCost() {
+        return this.canUpgrade() ? this.getLevelData().upgradeCost : 0;
+      }
+
+      getSellValue() {
+        return Math.round(this.investedEnergy * 0.7);
+      }
+
+      upgrade() {
+        if (!this.canUpgrade()) return false;
+        const cost = this.getUpgradeCost();
+        this.investedEnergy += cost;
+        this.level++;
+        return true;
+      }
+
+      update(dt, game) {
+        this.animationTime += dt;
+        if (this.cooldown > 0) {
+          this.cooldown -= dt;
+        }
+
+        if (this.animRecoil > 0) {
+          this.animRecoil = Math.max(0, this.animRecoil - dt * 6);
+        }
+
+        const data = this.getLevelData();
+
+        if (this.typeId === 'POWER_PLANT') {
+          if (game.state === 'PLAYING' && game.isWaveInProgress) {
+            this.storedEnergy = Math.min(data.capacity, this.storedEnergy + data.energyRate * dt);
+            if (game.selectedTower === this) game.updateInspectPanel();
+          }
+          return;
+        }
+
+        if (this.typeId === 'FACTORY') {
+          if (Math.random() < dt * 2) {
+            game.addParticle(this.x + 5, this.y - 18, (Math.random() - 0.5) * 5, -18, '#cbd5e1', 0.75, 3);
+          }
+          return;
+        }
+
+        if (this.typeId === 'MILITARY_BASE') {
+          this.spawnCooldown -= dt;
+          const activeVehicles = game.vehicles.filter(vehicle => vehicle.sourceTower === this && !vehicle.dead).length;
+          if (this.spawnCooldown <= 0 && activeVehicles < (data.maxActive || 1)) {
+            game.vehicles.push(new ConvoyVehicle(this, game));
+            this.spawnCooldown = data.spawnInterval;
+          }
+          return;
+        }
+
+        if (this.typeId === 'FALCON') {
+          this.orbitAngle = (this.orbitAngle + data.flightSpeed * dt) % (Math.PI * 2);
+          this.x = this.anchorX + Math.cos(this.orbitAngle) * data.flightRadius;
+          this.y = this.anchorY + Math.sin(this.orbitAngle) * data.flightRadius * 0.62;
+          this.findTarget(game.enemies, data.range);
+          if (this.target) {
+            this.angle = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+            if (this.cooldown <= 0) {
+              this.shoot(game, data);
+              this.cooldown = data.rate;
+              this.animRecoil = 1;
+            }
+          }
+          return;
+        }
+
+        // Пошук цілі в радіусі дії (пріоритет: перший ворог по шляху)
+        if (this.typeId === 'SNIPER' || !this.target || this.target.dead || Math.hypot(this.target.x - this.x, this.target.y - this.y) > data.range) {
+          this.findTarget(game.enemies, data.range);
+        }
+
+        if (this.target) {
+          const dx = this.target.x - this.x;
+          const dy = this.target.y - this.y;
+          this.angle = Math.atan2(dy, dx);
+
+          // Стрільба при готовності кулдауну
+          if (this.cooldown <= 0) {
+            this.shoot(game, data);
+            this.cooldown = data.rate;
+            this.animRecoil = 1;
+          }
+        }
+      }
+
+      findTarget(enemies, range) {
+        let bestEnemy = null;
+        let maxIndex = -1;
+
+        for (let i = 0; i < enemies.length; i++) {
+          const e = enemies[i];
+          if (e.dead) continue;
+          // Підводні човни можуть бути атаковані тільки Дроном або спеціальними вежами
+          if (e.isSubmerged && this.typeId !== 'SEA_DRONE') continue;
+          if (e.isStealth && !this.getLevelData().canDetectStealth && this.typeId !== 'SNIPER') continue;
+          const d = Math.hypot(e.x - this.x, e.y - this.y);
+          if (d <= range) {
+            const bossPriority = this.typeId === 'SNIPER';
+            const bestIsBoss = bestEnemy && bestEnemy.isBoss;
+            const outranks = bossPriority
+              ? (!bestEnemy || (e.isBoss && !bestIsBoss) || (e.isBoss === bestIsBoss && e.maxHp > bestEnemy.maxHp) || (e.isBoss === bestIsBoss && e.maxHp === bestEnemy.maxHp && e.pathIndex > maxIndex))
+              : e.pathIndex > maxIndex;
+            if (outranks) {
+              maxIndex = e.pathIndex;
+              bestEnemy = e;
+            }
+          }
+        }
+        this.target = bestEnemy;
+      }
+
+      shoot(game, data) {
+        const cfg = this.getConfig();
+
+        if (this.typeId === 'FALCON') {
+          const rocketMode = data.attackMode === 'ROCKET';
+          if (rocketMode) audio.missileLaunch();
+          else audio.shootArrow();
+          game.projectiles.push(new Projectile('UNIT_SHOT', this.x, this.y - 22, this.target, data.damage, cfg.bulletSpeed, {
+            color: data.color,
+            damageType: rocketMode ? 'EXPLOSIVE' : 'PHYSICAL',
+            splash: data.splash || 0,
+            rangeOrigin: { x: this.x, y: this.y },
+            attackRange: data.range
+          }));
+        }
+        else if (this.typeId === 'ARCHER') {
+          audio.shootArrow();
+          game.projectiles.push(new Projectile('ARCHER', this.x, this.y, this.target, data.damage, cfg.bulletSpeed));
+        }
+        else if (this.typeId === 'CANNON') {
+          audio.shootCannon();
+          game.projectiles.push(new Projectile('CANNON', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { splash: data.splash }));
+        }
+        else if (this.typeId === 'MAGE') {
+          audio.shootMagic();
+          game.projectiles.push(new Projectile('MAGE', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { slow: data.slow, slowDuration: data.slowDuration, freezeDuration: data.freezeDuration }));
+        }
+        else if (this.typeId === 'SNIPER') {
+          game.projectiles.push(new Projectile('SNIPER', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { critChance: data.critChance }));
+        }
+        else if (this.typeId === 'TESLA') {
+          game.projectiles.push(new Projectile('TESLA', this.x, this.y, this.target, data.damage, 0, { chainCount: data.chainCount, chainRange: data.chainRange, stunDuration: data.stunDuration }));
+        }
+        else if (this.typeId === 'POISON') {
+          game.projectiles.push(new Projectile('POISON', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { dotDamage: data.damage, dotTicks: data.dotTicks, dotInterval: data.dotInterval, poisonSlow: data.poisonSlow }));
+        }
+        else if (this.typeId === 'COASTAL_GUN') {
+          // Берегова гармата — потужні вибухові снаряди. Рівень 5: потрійний залп
+          audio.shootCannon();
+          const count = data.volleyShots || 1;
+          for (let s = 0; s < count; s++) {
+            const delayDist = s * 14;
+            const targetPos = this.target ? {
+              x: this.target.x + (s === 0 ? 0 : (Math.random() - 0.5) * 35),
+              y: this.target.y + (s === 0 ? 0 : (Math.random() - 0.5) * 35)
+            } : { x: this.x, y: this.y };
+            setTimeout(() => {
+              game.projectiles.push(new Projectile('COASTAL_SHELL', this.x, this.y, { x: targetPos.x, y: targetPos.y, dead: false }, data.damage, cfg.bulletSpeed, { splash: data.splash }));
+            }, s * 120);
+          }
+        }
+        else if (this.typeId === 'ROCKET_BOAT') {
+          // Ракетний катер — самонавідні ракети. Рівень 5: мульти-залп 4 ракет
+          audio.missileLaunch();
+          const rCount = data.multiRocket || 1;
+          for (let r = 0; r < rCount; r++) {
+            setTimeout(() => {
+              if (this.target && !this.target.dead) {
+                game.projectiles.push(new Projectile('ROCKET', this.x, this.y, this.target, Math.round(data.damage / (rCount > 1 ? 1.5 : 1)), cfg.bulletSpeed, { splash: data.splash }));
+              }
+            }, r * 90);
+          }
+        }
+        else if (this.typeId === 'SEA_DRONE') {
+          // Морський дрон — швидкий лазерний обстріл / міні-ракети, вражає підводні човни
+          audio.shootArrow();
+          if (data.deepScan) {
+            audio.sonarPing();
+          }
+          game.projectiles.push(new Projectile('DRONE_SHOT', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { splash: data.splash || 20 }));
+        }
+        else if (['SCOUT', 'GUNNER', 'ENGINEER', 'MEDIC', 'FLAMETHROWER', 'ROCKETEER', 'DRONE_OPERATOR', 'TANKER', 'GENERAL'].includes(this.typeId)) {
+          const isFlamethrower = this.typeId === 'FLAMETHROWER';
+          const splash = Number(data.splash) || (isFlamethrower ? 30 : 0);
+          audio.shootArrow();
+          game.projectiles.push(new Projectile('UNIT_SHOT', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, {
+            color: data.color || '#fbbf24',
+            damageType: splash ? 'EXPLOSIVE' : 'PHYSICAL',
+            splash,
+            dotDamage: isFlamethrower ? Math.max(1, Math.round(data.damage * 0.15)) : 0,
+            dotTicks: data.flameTicks || 0,
+            dotInterval: 0.5,
+            canTargetSub: this.typeId === 'DRONE_OPERATOR'
+          }));
+        }
+      }
+
+      draw(ctx, isSelected) {
+        const data = this.getLevelData();
+        ctx.save();
+
+        if (this.typeId === 'FALCON' && isSelected) {
+          ctx.strokeStyle = 'rgba(96, 165, 250, 0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.ellipse(this.anchorX, this.anchorY, data.flightRadius, data.flightRadius * 0.62, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Підсвітка радіусу атаки, якщо вежу виділено
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, data.range || 0, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([6, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Основа вежі (платформа зі стилем за рівнем)
+        const pad = 4;
+        const bX = this.col * this.tileSize + pad;
+        const bY = this.row * this.tileSize + pad;
+        const bSize = this.tileSize - pad * 2;
+
+        // Колір рамки залежно від рівня
+        const levelBorders = ['#475569', '#38bdf8', '#a855f7', '#f59e0b', '#fbbf24'];
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(bX, bY, bSize, bSize);
+        const platformTexture = NavalArt.images[this.typeId === 'ROCKET_BOAT' ? 'water' : 'concrete'];
+        if (platformTexture && ['COASTAL_GUN', 'ROCKET_BOAT', 'SEA_DRONE'].includes(this.typeId)) {
+          ctx.drawImage(platformTexture, bX, bY, bSize, bSize);
+        }
+        ctx.strokeStyle = isSelected ? '#fbbf24' : levelBorders[this.level - 1];
+        ctx.lineWidth = this.level >= 3 ? 2.5 : 1.5;
+        ctx.strokeRect(bX, bY, bSize, bSize);
+
+        // Малювання башти за типом та рівнем
+        ctx.translate(this.x, this.y - (this.typeId === 'FALCON' ? 22 : 0));
+
+        if (GameArt.tower(ctx, this)) {
+          // Level frame, selection and stars remain visible around the sprite.
+        } else if (this.typeId === 'FALCON') {
+          ctx.save();
+          ctx.rotate(this.angle);
+          ctx.fillStyle = '#334155';
+          ctx.beginPath();
+          ctx.moveTo(18, 0);
+          ctx.lineTo(-12, -5);
+          ctx.lineTo(-19, -12);
+          ctx.lineTo(-14, -2);
+          ctx.lineTo(-14, 2);
+          ctx.lineTo(-19, 12);
+          ctx.lineTo(-12, 5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = data.color;
+          ctx.beginPath();
+          ctx.moveTo(18, 0);
+          ctx.lineTo(-12, -3);
+          ctx.lineTo(-15, 0);
+          ctx.lineTo(-12, 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#bae6fd';
+          ctx.beginPath();
+          ctx.ellipse(3, 0, 5, 2.3, 0, 0, Math.PI * 2);
+          ctx.fill();
+          if (data.attackMode === 'ROCKET') {
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(-7, -8, 7, 2);
+            ctx.fillRect(-7, 6, 7, 2);
+          }
+          ctx.restore();
+        }
+        else if (this.typeId === 'FACTORY') {
+          const width = 27 + this.level * 2;
+          const height = 19 + this.level;
+          ctx.fillStyle = '#26352d';
+          ctx.fillRect(-width / 2, -height / 2, width, height);
+          ctx.fillStyle = data.color;
+          ctx.fillRect(-width / 2, -height / 2, width, 5);
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(-8, 1, 8, height / 2);
+          ctx.fillRect(3, -height / 2 - 7, 5, 12);
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillRect(4, -height / 2 - 8 - Math.sin(this.animationTime * 5) * 2, 3, 2);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(-width / 2 + 3, -height / 2 + 8, 5, 4);
+          ctx.fillRect(width / 2 - 8, -height / 2 + 8, 5, 4);
+        }
+        else if (this.typeId === 'MILITARY_BASE') {
+          const width = 28 + this.level * 2;
+          const height = 22 + this.level * 2;
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(-width / 2, -height / 2, width, height);
+          ctx.fillStyle = data.color;
+          ctx.fillRect(-width / 2, -height / 2, width, 5);
+          ctx.fillStyle = '#0b1220';
+          ctx.fillRect(-8, -height / 2 + 7, 16, height - 7);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(-8, -height / 2 + 7, 16, height - 7);
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillRect(-width / 2 + 3, -height / 2 + 7, 3, 3);
+          ctx.fillRect(width / 2 - 6, -height / 2 + 7, 3, 3);
+        }
+        else if (this.typeId === 'ARCHER') {
+          // Базова турель
+          ctx.fillStyle = this.level === 4 ? '#0284c7' : '#475569';
+          ctx.beginPath();
+          ctx.arc(0, 0, 13 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Обертова частина
+          ctx.rotate(this.angle);
+          const recoil = -this.animRecoil * 5;
+
+          if (this.level === 1) {
+            // Одинарний арбалет
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(-4 + recoil, -2.5, 16, 5);
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(10 + recoil, 0, 9, -Math.PI / 2.5, Math.PI / 2.5);
+            ctx.stroke();
+          } else if (this.level === 2) {
+            // Посилений сталевий арбалет
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(-5 + recoil, -3, 18, 6);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(11 + recoil, 0, 11, -Math.PI / 2.4, Math.PI / 2.4);
+            ctx.stroke();
+          } else if (this.level === 3) {
+            // Подвійний скорострільний арбалет
+            ctx.fillStyle = '#0284c7';
+            ctx.fillRect(-6 + recoil, -6, 20, 4);
+            ctx.fillRect(-6 + recoil, 2, 20, 4);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(12 + recoil, -4, 8, -Math.PI / 3, Math.PI / 3);
+            ctx.arc(12 + recoil, 4, 8, -Math.PI / 3, Math.PI / 3);
+            ctx.stroke();
+          } else {
+            // Рівень 4: Легендарна небесна баліста
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-6 + recoil, -7, 22, 14);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(0 + recoil, -3, 18, 6);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(14 + recoil, 0, 14, -Math.PI / 2.2, Math.PI / 2.2);
+            ctx.stroke();
+          }
+        }
+        else if (this.typeId === 'CANNON') {
+          // Масивна гармата
+          ctx.fillStyle = this.level === 4 ? '#450a0a' : '#1e293b';
+          ctx.beginPath();
+          ctx.arc(0, 0, 14 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.rotate(this.angle);
+          const recoil = -this.animRecoil * 7;
+
+          if (this.level === 1) {
+            // Чавунна мортира
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(-3 + recoil, -4.5, 17, 9);
+            ctx.fillStyle = '#f97316';
+            ctx.fillRect(12 + recoil, -3.5, 2.5, 7);
+          } else if (this.level === 2) {
+            // Бронзова облогова гармата
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(-4 + recoil, -5.5, 20, 11);
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(13 + recoil, -4.5, 3.5, 9);
+          } else if (this.level === 3) {
+            // Подвійна важка гармата
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-4 + recoil, -7, 21, 5.5);
+            ctx.fillRect(-4 + recoil, 1.5, 21, 5.5);
+            ctx.fillStyle = '#ea580c';
+            ctx.fillRect(14 + recoil, -6, 3, 4);
+            ctx.fillRect(14 + recoil, 2.5, 3, 4);
+          } else {
+            // Рівень 4: Пекельний бомбардир
+            ctx.fillStyle = '#7f1d1d';
+            ctx.fillRect(-5 + recoil, -8, 23, 16);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(15 + recoil, -6.5, 4, 13);
+            // Вогняне ядро
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(recoil, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        else if (this.typeId === 'MAGE') {
+          // Магічний шпиль
+          ctx.fillStyle = this.level === 4 ? '#2e1065' : '#3b0764';
+          ctx.beginPath();
+          ctx.arc(0, 0, 13 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Обертання/левітація кристалів
+          const time = Date.now() * 0.003;
+          const crystalSize = 6 + this.level * 2;
+
+          ctx.fillStyle = this.level === 4 ? '#67e8f9' : '#c084fc';
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 8 + this.level * 3;
+
+          // Центральний кристал
+          ctx.beginPath();
+          ctx.moveTo(0, -crystalSize);
+          ctx.lineTo(crystalSize * 0.7, 0);
+          ctx.lineTo(0, crystalSize);
+          ctx.lineTo(-crystalSize * 0.7, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Орбітальні руни для рівнів 2, 3, 4
+          if (this.level >= 2) {
+            const orbitR = 12 + this.level * 2;
+            const count = this.level;
+            for (let i = 0; i < count; i++) {
+              const ang = time + (i * Math.PI * 2) / count;
+              const ox = Math.cos(ang) * orbitR;
+              const oy = Math.sin(ang) * orbitR;
+              ctx.fillStyle = '#38bdf8';
+              ctx.beginPath();
+              ctx.arc(ox, oy, 2.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          // The crystal brightens as its cooldown completes; facets vary by upgrade level.
+          const charge = Math.max(0, Math.min(1, 1 - this.cooldown / data.rate));
+          const glow = 7 + charge * 15 + (Math.sin(time * 5) + 1) * 2;
+          ctx.shadowColor = this.level >= 3 ? '#38bdf8' : '#c084fc';
+          ctx.shadowBlur = glow;
+          ctx.strokeStyle = this.level >= 3 ? '#bae6fd' : '#e9d5ff';
+          ctx.lineWidth = 1 + this.level * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(0, -crystalSize);
+          ctx.lineTo(crystalSize * 0.7, 0);
+          ctx.lineTo(0, crystalSize);
+          ctx.lineTo(-crystalSize * 0.7, 0);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          if (this.level >= 3 && charge > 0.75) {
+            ctx.globalAlpha = (charge - 0.75) * 2.5;
+            ctx.strokeStyle = '#7dd3fc';
+            ctx.beginPath();
+            ctx.arc(0, 0, crystalSize + 5 + Math.sin(time * 8) * 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+        else if (this.typeId === 'SNIPER') {
+          const colors = ['#84cc16', '#65a30d', '#4d7c0f', '#bef264'];
+          ctx.fillStyle = '#26351c';
+          ctx.beginPath();
+          ctx.arc(0, 0, 10 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.rotate(this.angle);
+          ctx.fillStyle = colors[this.level - 1];
+          ctx.fillRect(-7, -4, 19 + this.level, 8);
+          ctx.fillStyle = '#d9f99d';
+          ctx.fillRect(7 + this.level, -2, 10 + this.level * 2, 4);
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-3, 4, 4, 6);
+          if (this.level >= 3) {
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 13 + this.level, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+        else if (this.typeId === 'TESLA') {
+          const time = Date.now() * 0.006;
+          const coilColor = ['#facc15', '#eab308', '#ca8a04', '#fde047'][this.level - 1];
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-9, -8, 18, 16);
+          ctx.strokeStyle = coilColor;
+          ctx.lineWidth = 2 + this.level * 0.35;
+          ctx.shadowColor = coilColor;
+          ctx.shadowBlur = this.animRecoil > 0 ? 16 : 6;
+          ctx.beginPath();
+          ctx.moveTo(0, -7);
+          ctx.lineTo(0, -13 - this.level);
+          ctx.stroke();
+          for (let i = 0; i < this.level + 1; i++) {
+            const angle = time + i * Math.PI * 2 / (this.level + 1);
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * 10, Math.sin(angle) * 10, 3, 0, Math.PI * 2);
+            ctx.fillStyle = coilColor;
+            ctx.fill();
+          }
+          ctx.shadowBlur = 0;
+        }
+        else if (this.typeId === 'POISON') {
+          const poisonColor = ['#4ade80', '#22c55e', '#16a34a', '#86efac'][this.level - 1];
+          ctx.fillStyle = '#26352d';
+          ctx.beginPath();
+          ctx.arc(0, 2, 11 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#365b3e';
+          ctx.fillRect(-10, -4, 20, 12);
+          ctx.fillStyle = poisonColor;
+          ctx.shadowColor = '#4ade80';
+          ctx.shadowBlur = 5 + this.level * 2;
+          ctx.beginPath();
+          ctx.arc(0, -6, 4 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#dcfce7';
+          ctx.beginPath();
+          ctx.arc(-1, -8, 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        else if (this.typeId === 'COASTAL_GUN') {
+          // Берегова гармата: масивна обертова вежа з бронещитом та довгим стволом
+          const colors = ['#f97316', '#ea580c', '#dc2626', '#b91c1c', '#ef4444'];
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.arc(0, 0, 12 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = colors[this.level - 1];
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+
+          ctx.rotate(this.angle);
+          const recoil = -this.animRecoil * 6;
+
+          // Масивний бронещит
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(-8 + recoil, -8, 16, 16);
+          // Довгий гарматний ствол
+          ctx.fillStyle = colors[this.level - 1];
+          ctx.fillRect(2 + recoil, -3.5, 18 + this.level * 2, 7);
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(16 + this.level * 2 + recoil, -4.5, 4, 9);
+          // На рівні 5 — потрійний ствол
+          if (this.level === 5) {
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(6 + recoil, -7, 12, 3);
+            ctx.fillRect(6 + recoil, 4, 12, 3);
+          }
+        }
+        else if (this.typeId === 'ROCKET_BOAT') {
+          // Ракетний катер: обтічний військовий катер з ракетними установками
+          const colors = ['#38bdf8', '#0ea5e9', '#0284c7', '#0369a1', '#7dd3fc'];
+          // Корпус катера
+          ctx.rotate(this.angle);
+          if (!NavalArt.sprite(ctx, 'destroyer', 0, 0, 32 + this.level * 2, 26)) {
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 14 + this.level, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = colors[this.level - 1];
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+
+          // Ракетні контейнери (блоки)
+          ctx.fillStyle = colors[this.level - 1];
+          ctx.fillRect(-6, -6, 12, 4);
+          ctx.fillRect(-6, 2, 12, 4);
+          // Головки ракет
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(6, -4, 2, 0, Math.PI * 2);
+          ctx.arc(6, 4, 2, 0, Math.PI * 2);
+          ctx.fill();
+          if (this.level === 5) {
+            // Додаткові ракети на даху
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillRect(-3, -2, 8, 4);
+          }
+        }
+        else if (this.typeId === 'SEA_DRONE') {
+          // Морський дрон: літаючий квадрокоптер із 4 гвинтами та сканером
+          const time = Date.now() * 0.015;
+          const colors = ['#c084fc', '#a855f7', '#9333ea', '#7c3aed', '#ddd6fe'];
+
+          // Центральний корпус
+          ctx.fillStyle = '#1e1b4b';
+          ctx.beginPath();
+          ctx.arc(0, 0, 8 + this.level * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = colors[this.level - 1];
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // 4 промені та обертові пропелери
+          for (let i = 0; i < 4; i++) {
+            const ang = (i * Math.PI) / 2 + Math.PI / 4;
+            const dist = 11 + this.level;
+            const px = Math.cos(ang) * dist;
+            const py = Math.sin(ang) * dist;
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(px, py);
+            ctx.stroke();
+
+            // Пропелер, що крутиться
+            ctx.fillStyle = colors[this.level - 1];
+            ctx.beginPath();
+            ctx.ellipse(px, py, 4.5, 1.5, time, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Сенсорне сяйво (виявлення підводних цілей)
+          ctx.fillStyle = colors[this.level - 1];
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        else {
+          const cfg = this.getConfig();
+          const color = data.color || '#38bdf8';
+          ctx.fillStyle = '#1e293b';
+          ctx.beginPath();
+          ctx.arc(0, 0, 11 + this.level, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.rotate(this.angle);
+          ctx.fillStyle = color;
+          ctx.fillRect(-3, -4, 17 + this.level, 8);
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(cfg.icon || '●', -1, 0);
+        }
+
+        ctx.restore();
+
+        // Зірочки рівня над баштою
+        const maxStars = this.getConfig().levels.length;
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        let starStr = '★'.repeat(this.level) + '☆'.repeat(maxStars - this.level);
+        ctx.fillText(starStr, this.x, this.row * this.tileSize + 11);
+      }
+    }
+
+    class ConvoyVehicle {
+      constructor(sourceTower, game) {
+        this.sourceTower = sourceTower;
+        this.level = sourceTower.level;
+        this.stats = sourceTower.getLevelData();
+        this.x = sourceTower.x;
+        this.y = sourceTower.y;
+        this.hp = this.stats.vehicleHp;
+        this.maxHp = this.stats.vehicleHp;
+        this.speed = [105, 115, 125, 140, 155][this.level - 1];
+        this.dead = false;
+        this.angle = 0;
+        this.animTime = 0;
+        this.attackCooldown = 0;
+        this.supportCooldown = 0;
+        this.hitEnemies = new Set();
+        this.path = game.pathPixelPoints;
+        this.pathIndex = 1;
+        let nearestDistance = Infinity;
+        for (let index = 1; index < this.path.length - 1; index++) {
+          const distance = Math.hypot(this.path[index].x - this.x, this.path[index].y - this.y);
+          if (distance < nearestDistance) {
+            nearestDistance = distance;
+            this.pathIndex = index;
+          }
+        }
+      }
+
+      update(dt, game) {
+        if (this.dead) return;
+        this.animTime += dt;
+        this.attackCooldown -= dt;
+        this.supportCooldown -= dt;
+
+        let target = null;
+        let furthestPathIndex = -1;
+        if (this.stats.range > 0) {
+          for (const enemy of game.enemies) {
+            if (enemy.dead || (enemy.isStealth && !this.stats.canDetectStealth)) continue;
+            if (Math.hypot(enemy.x - this.x, enemy.y - this.y) <= this.stats.range && enemy.pathIndex > furthestPathIndex) {
+              target = enemy;
+              furthestPathIndex = enemy.pathIndex;
+            }
+          }
+        }
+
+        if (target) {
+          this.angle = Math.atan2(target.y - this.y, target.x - this.x);
+          if (this.stats.damage > 0 && this.attackCooldown <= 0) {
+            game.projectiles.push(new Projectile('UNIT_SHOT', this.x, this.y, target, this.stats.damage, 620, {
+              color: this.stats.color,
+              splash: this.stats.splash || 0,
+              damageType: this.stats.splash ? 'EXPLOSIVE' : 'PHYSICAL'
+            }));
+            this.attackCooldown = this.stats.rate;
+            audio.shootArrow();
+          }
+          if (this.stats.supportDamage && this.supportCooldown <= 0) {
+            game.projectiles.push(new Projectile('UNIT_SHOT', this.x, this.y, target, this.stats.supportDamage, 700, {
+              color: '#fbbf24', damageType: 'PHYSICAL'
+            }));
+            this.supportCooldown = this.stats.supportRate;
+          }
+        }
+
+        for (const enemy of game.enemies) {
+          if (enemy.dead || this.hitEnemies.has(enemy)) continue;
+          if (Math.hypot(enemy.x - this.x, enemy.y - this.y) > (enemy.radius || 10) + 9) continue;
+          this.hitEnemies.add(enemy);
+          enemy.takeDamage(this.stats.collisionDamage, game, 'EXPLOSIVE');
+          if (this.level === 1) {
+            this.destroy(game);
+            return;
+          }
+          this.hp -= 15;
+          if (this.hp <= 0) {
+            this.destroy(game);
+            return;
+          }
+        }
+
+        if (this.pathIndex >= this.path.length) {
+          this.dead = true;
+          return;
+        }
+        const waypoint = this.path[this.pathIndex];
+        const dx = waypoint.x - this.x;
+        const dy = waypoint.y - this.y;
+        const distance = Math.hypot(dx, dy);
+        const step = this.speed * dt;
+        if (distance <= step || distance < 2) {
+          this.x = waypoint.x;
+          this.y = waypoint.y;
+          this.pathIndex++;
+          if (this.pathIndex >= this.path.length) this.dead = true;
+        } else {
+          this.angle = Math.atan2(dy, dx);
+          this.x += (dx / distance) * step;
+          this.y += (dy / distance) * step;
+        }
+      }
+
+      destroy(game) {
+        if (this.dead) return;
+        this.dead = true;
+        audio.explosion();
+        for (let index = 0; index < 10; index++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 20 + Math.random() * 70;
+          game.addParticle(this.x, this.y, Math.cos(angle) * speed, Math.sin(angle) * speed, index % 2 ? '#f97316' : '#64748b', 0.45, 4);
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath();
+        ctx.ellipse(0, 7, 17, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        if (this.level >= 3) {
+          ctx.fillStyle = '#26352d';
+          ctx.fillRect(-13, -9, 26, 18);
+          ctx.fillStyle = this.stats.color;
+          ctx.fillRect(-8, -6, 18, 12);
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(-2, -2, 18, 4);
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(-12, -12, 24, 3);
+          ctx.fillRect(-12, 9, 24, 3);
+          if (this.level >= 4) {
+            ctx.fillStyle = '#67e8f9';
+            ctx.fillRect(-10, -5, 3, 2);
+            ctx.fillRect(-10, 3, 3, 2);
+          }
+        } else {
+          ctx.fillStyle = '#365b3e';
+          ctx.fillRect(-14, -7, 27, 14);
+          ctx.fillStyle = '#84a98c';
+          ctx.fillRect(-5, -5, 10, 10);
+          ctx.fillStyle = '#111827';
+          for (const wheelX of [-9, 8]) {
+            ctx.beginPath();
+            ctx.arc(wheelX, -8, 3, 0, Math.PI * 2);
+            ctx.arc(wheelX, 8, 3, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          if (this.level >= 2) {
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(-2, -10, 12, 3);
+          }
+        }
+        ctx.restore();
+
+        const healthWidth = 28;
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(this.x - healthWidth / 2, this.y - 17, healthWidth, 3);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(this.x - healthWidth / 2, this.y - 17, healthWidth * Math.max(0, this.hp / this.maxHp), 3);
+      }
+    }
+
+    /* ==========================================================================
+       6. ГОЛОВНИЙ ДВИГУНЕЦЬ ГРИ
+       ========================================================================== */
+    class GameEngine {
+      constructor() {
+        this.canvas = document.getElementById('gameCanvas');
+        this.ctx = this.canvas.getContext('2d');
+
+        this.tileSize = 40; // 25 стовпців x 15 рядків = 1000 x 600 px
+        this.cols = 25;
+        this.rows = 15;
+
+        // Стан гри
+        this.state = 'MAP_SELECT'; // MAP_SELECT, PLAYING, PAUSED, GAME_OVER, VICTORY
+        this.currentMapId = 'VALLEY';
+        this.mapData = null;
+        this.grid = []; // 0: вільна земля, 1: шлях, 2: декорація/перешкода, 3: зайнято баштою
+        this.pathPixelPoints = [];
+
+        this.energy = 300;
+        this.lives = 20;
+        this.currentWaveIndex = 0;
+        this.waves = [];
+        this.isWaveInProgress = false;
+
+        this.enemies = [];
+        this.towers = [];
+        this.vehicles = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.lightningEffects = [];
+
+        // Спавн поточної хвилі
+        this.spawnQueue = [];
+        this.spawnTimer = 0;
+
+        // Вибір гравця
+        this.selectedBuildType = 'ARCHER';
+        this.selectedTower = null;
+        this.hoverTile = null;
+
+        // Налаштування швидкості та тряски екрану
+        this.selectedDifficulty = 'HARD';
+        this.difficulty = GAME_DIFFICULTIES.HARD;
+        this.gameSpeed = 1; // 1, 2 або 3; усі режими використовують однакові підкроки симуляції.
+        this.screenShakeTime = 0;
+
+        // Статистика
+        this.totalKills = 0;
+        this.totalTowersBuilt = 0;
+        this.factoryPaidWaves = new Set();
+
+        // Кешований фон карти для оптимізації рендерингу
+        this.bgCanvas = document.createElement('canvas');
+        this.bgCanvas.width = 1000;
+        this.bgCanvas.height = 600;
+        this.bgCtx = this.bgCanvas.getContext('2d');
+        this.navalTime = 0;
+
+        this.initDOM();
+        this.renderMapPreviews();
+        this.initInputs();
+        Promise.all([NavalArt.load(), GameArt.load()]).then(() => {
+          if (this.mapData) this.preRenderBackground();
+          this.renderMapPreviews();
+        });
+
+        // Запуск головного циклу
+        this.lastTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      initDOM() {
+        this.dom = {
+          energy: document.getElementById('energy-val'),
+          lives: document.getElementById('lives-val'),
+          wave: document.getElementById('wave-val'),
+          enemies: document.getElementById('enemies-val'),
+          btnSpeed: document.getElementById('btn-speed'),
+          btnPause: document.getElementById('btn-pause'),
+          btnSound: document.getElementById('btn-sound'),
+          btnRestart: document.getElementById('btn-restart'),
+          btnNextWave: document.getElementById('btn-next-wave'),
+          btnTopSkip: document.getElementById('btn-top-skip'),
+          bossBar: document.getElementById('boss-health-bar'),
+          bossTitle: document.getElementById('boss-title-text'),
+          bossHpText: document.getElementById('boss-hp-text'),
+          bossHpFill: document.getElementById('boss-hp-fill'),
+          waveAnnouncer: document.getElementById('wave-announcer'),
+          buildPanel: document.getElementById('build-panel'),
+          selectedPanel: document.getElementById('selected-tower-panel'),
+          inspectName: document.getElementById('inspect-name'),
+          inspectStars: document.getElementById('inspect-stars'),
+          inspectStats: document.getElementById('inspect-stats'),
+          btnUpgradeTower: document.getElementById('btn-upgrade-tower'),
+          btnCollectEnergy: document.getElementById('btn-collect-energy'),
+          upgradeCost: document.getElementById('upgrade-cost'),
+          btnSellTower: document.getElementById('btn-sell-tower'),
+          sellValue: document.getElementById('sell-value'),
+          btnCloseInspect: document.getElementById('btn-close-inspect'),
+          modalMapSelect: document.getElementById('modal-map-select'),
+          modalDefeat: document.getElementById('modal-defeat'),
+          modalVictory: document.getElementById('modal-victory'),
+          statDefeatWaves: document.getElementById('stat-defeat-waves'),
+          statDefeatKills: document.getElementById('stat-defeat-kills'),
+          statDefeatTowers: document.getElementById('stat-defeat-towers'),
+          statVictoryLives: document.getElementById('stat-victory-lives'),
+          statVictoryKills: document.getElementById('stat-victory-kills'),
+          statVictoryEnergy: document.getElementById('stat-victory-energy'),
+          btnRetry: document.getElementById('btn-retry'),
+          btnVictoryRestart: document.getElementById('btn-victory-restart')
+        };
+      }
+
+      shakeScreen(duration = 0.4) {
+        this.screenShakeTime = duration;
+      }
+
+      loadMap(mapId) {
+        audio.init();
+        this.currentMapId = mapId;
+        this.mapData = MAP_DEFINITIONS[mapId];
+        this.difficulty = GAME_DIFFICULTIES[this.selectedDifficulty] || GAME_DIFFICULTIES.HARD;
+
+        // Скидання параметрів гри
+        this.energy = this.difficulty.startEnergy;
+        this.lives = this.difficulty.lives;
+        this.spawnQueue = [];
+        this.spawnTimer = 0;
+        this.currentWaveIndex = 0;
+        this.totalKills = 0;
+        this.totalTowersBuilt = 0;
+        this.isWaveInProgress = false;
+        this.enemies = [];
+        this.towers = [];
+        this.vehicles = [];
+        this.projectiles = [];
+        this.particles = [];
+        this.lightningEffects = [];
+        this.factoryPaidWaves = new Set();
+        this.selectedTower = null;
+        this.waves = mapId === 'PORT' ? generatePortWaveConfig() : generateWaveConfig();
+        this.waves.forEach(wave => {
+          const regulars = wave.queue.filter(enemy => enemy.type !== 'BOSS');
+          const extra = Math.round(regulars.length * (this.difficulty.count - 1));
+          const reinforcements = Array.from({ length: extra }, (_, i) => regulars[i % regulars.length]);
+          wave.queue = [...reinforcements, ...wave.queue].map(enemy => scaleEnemyForDifficulty(enemy, this.difficulty));
+          wave.reward = Math.max(1, Math.round(wave.reward * this.difficulty.gold));
+        });
+
+        // Показати/сховати морські вежі в панелі будівництва
+        const navalCards = document.querySelectorAll('.tower-card.naval-only');
+        navalCards.forEach(card => {
+          card.style.display = (mapId === 'PORT') ? 'flex' : 'none';
+        });
+
+        // Створення сітки
+        this.grid = [];
+        for (let r = 0; r < this.rows; r++) {
+          this.grid[r] = [];
+          for (let c = 0; c < this.cols; c++) {
+            this.grid[r][c] = 0; // 0 = можна будувати
+          }
+        }
+
+        // Перетворення точок шляху на пікселі
+        this.pathPixelPoints = this.mapData.pathPoints.map(p => ({
+          x: (p.x + 0.5) * this.tileSize,
+          y: (p.y + 0.5) * this.tileSize
+        }));
+
+        // Розмітка шляху на сітці (заборона будівництва)
+        for (let i = 0; i < this.mapData.pathPoints.length - 1; i++) {
+          const p1 = this.mapData.pathPoints[i];
+          const p2 = this.mapData.pathPoints[i + 1];
+          const minX = Math.max(0, Math.floor(Math.min(p1.x, p2.x)));
+          const maxX = Math.min(this.cols - 1, Math.ceil(Math.max(p1.x, p2.x)));
+          const minY = Math.max(0, Math.floor(Math.min(p1.y, p2.y)));
+          const maxY = Math.min(this.rows - 1, Math.ceil(Math.max(p1.y, p2.y)));
+
+          for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+              this.grid[y][x] = 1; // 1 = шлях
+            }
+          }
+        }
+
+        // Open sea is visible water and cannot hold land towers.
+        if (this.mapData.isNavalMap) {
+          for (let row = 0; row < this.rows; row++) {
+            for (let col = 0; col < 4; col++) {
+              if (this.grid[row][col] === 0) this.grid[row][col] = 2;
+            }
+          }
+        }
+
+        // Розмітка перешкод
+        if (this.mapData.decorations) {
+          this.mapData.decorations.forEach(d => {
+            if (d.x >= 0 && d.x < this.cols && d.y >= 0 && d.y < this.rows) {
+              if (this.grid[d.y][d.x] === 0) {
+                this.grid[d.y][d.x] = 2; // 2 = перешкода
+              }
+            }
+          });
+        }
+
+        // Передрендеринг статичного фону карти
+        this.preRenderBackground();
+
+        this.state = 'PLAYING';
+        this.dom.modalMapSelect.style.display = 'none';
+        this.dom.modalDefeat.style.display = 'none';
+        this.dom.modalVictory.style.display = 'none';
+
+        this.renderBuildPanel();
+
+        // Якщо це військовий порт — пролунає сирена тривоги
+        if (mapId === 'PORT') {
+          setTimeout(() => { audio.siren(); }, 400);
+        }
+
+        this.updateUI();
+        const defaultBuildType = (window.playerProfile || loadPlayerProfile()).loadout[0] || 'SCOUT';
+        this.selectBuildCard(defaultBuildType);
+      }
+
+      preRenderBackground() {
+        const ctx = this.bgCtx;
+        const th = this.mapData.theme;
+        if (GameArt.landscape(ctx, this.mapData)) return;
+        if (this.mapData.isNavalMap) {
+          NavalArt.background(ctx, this.mapData);
+          return;
+        }
+
+        ctx.fillStyle = th.bg;
+        ctx.fillRect(0, 0, 1000, 600);
+
+        // Малювання клітинок землі з легким шаховим візерунком
+        for (let r = 0; r < this.rows; r++) {
+          for (let c = 0; c < this.cols; c++) {
+            const isAlt = (r + c) % 2 === 0;
+            ctx.fillStyle = isAlt ? th.grassDark : th.grassLight;
+            ctx.fillRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+
+            // Тонка сітка
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(c * this.tileSize, r * this.tileSize, this.tileSize, this.tileSize);
+          }
+        }
+
+        // Малювання дороги / річки лави / водної гавані
+        GameArt.background(ctx, this.mapData.id, 1000, 600);
+
+        ctx.lineWidth = this.tileSize * 0.9;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Зовнішній бордюр шляху
+        ctx.strokeStyle = th.pathBorder;
+        ctx.beginPath();
+        this.pathPixelPoints.forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        // Внутрішнє полотно шляху
+        ctx.lineWidth = this.tileSize * 0.72;
+        ctx.strokeStyle = th.pathColor;
+        ctx.beginPath();
+        this.pathPixelPoints.forEach((p, idx) => {
+          if (idx === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        // Хвилі та піна для водної карти
+        if (this.mapData.isNavalMap) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 12]);
+          ctx.beginPath();
+          this.pathPixelPoints.forEach((p, idx) => {
+            if (idx === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+          });
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Декоративні деталі на карті
+        if (this.mapData.decorations) {
+          this.mapData.decorations.forEach(d => {
+            const cx = (d.x + 0.5) * this.tileSize;
+            const cy = (d.y + 0.5) * this.tileSize;
+
+            if (d.type === 'tree') {
+              // Зелене дерево
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+              ctx.beginPath();
+              ctx.ellipse(cx, cy + 12, 14, 8, 0, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#065f46';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+              ctx.fill();
+
+              ctx.fillStyle = '#10b981';
+              ctx.beginPath();
+              ctx.arc(cx - 3, cy - 3, 10, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            else if (d.type === 'rock') {
+              // Камінь
+              ctx.fillStyle = '#475569';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#64748b';
+              ctx.beginPath();
+              ctx.arc(cx - 2, cy - 2, 7, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            else if (d.type === 'lavaVent') {
+              // Гейзер лави
+              ctx.fillStyle = '#1c1917';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#ea580c';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            else if (d.type === 'crystal') {
+              // Магматичний кристал
+              ctx.fillStyle = '#f43f5e';
+              ctx.beginPath();
+              ctx.moveTo(cx, cy - 12);
+              ctx.lineTo(cx + 8, cy + 8);
+              ctx.lineTo(cx - 8, cy + 8);
+              ctx.closePath();
+              ctx.fill();
+            }
+          });
+        }
+      }
+
+      renderMapPreviews() {
+        ['VALLEY', 'LAVA', 'PORT'].forEach(id => {
+          const map = MAP_DEFINITIONS[id];
+          const canvas = document.getElementById(id === 'VALLEY' ? 'preview-valley' : (id === 'LAVA' ? 'preview-lava' : 'preview-port'));
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          const scaleX = canvas.width / (25 * 40);
+          const scaleY = canvas.height / (15 * 40);
+          if (!map.isNavalMap && GameArt.images[id.toLowerCase()]) {
+            ctx.save(); ctx.scale(scaleX, scaleY);
+            GameArt.landscape(ctx, map);
+            ctx.restore();
+            return;
+          }
+          if (map.isNavalMap) {
+            ctx.save();
+            ctx.scale(scaleX, scaleY);
+            NavalArt.background(ctx, map);
+            ctx.restore();
+            return;
+          }
+
+          ctx.fillStyle = map.theme.bg;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          GameArt.background(ctx, id, canvas.width, canvas.height);
+          ctx.strokeStyle = map.theme.pathColor;
+          ctx.lineWidth = 14 * scaleX;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          map.pathPoints.forEach((p, idx) => {
+            const px = (p.x + 0.5) * 40 * scaleX;
+            const py = (p.y + 0.5) * 40 * scaleY;
+            if (idx === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.stroke();
+        });
+      }
+
+      initInputs() {
+        // Клік по картках вибору карти
+        document.querySelectorAll('.map-select-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const mapId = card.getAttribute('data-map');
+            this.loadMap(mapId);
+          });
+        });
+
+        // Клік по кнопках вибору башт
+        document.querySelectorAll('.tower-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const type = card.getAttribute('data-type');
+            this.selectBuildCard(type);
+          });
+        });
+
+        // Кнопка наступної хвилі
+        this.dom.btnNextWave.addEventListener('click', () => {
+          this.startNextWave();
+        });
+
+        window.addEventListener('storage', () => {
+          if (window.playerProfile) {
+            this.selectedBuildType = window.playerProfile.loadout[0] || 'SCOUT';
+            this.renderBuildPanel();
+          }
+        });
+
+        // Швидкість
+        this.dom.btnSpeed.addEventListener('click', () => {
+          this.gameSpeed = this.gameSpeed === 3 ? 1 : this.gameSpeed + 1;
+          this.dom.btnSpeed.textContent = `x${this.gameSpeed}`;
+          this.dom.btnSpeed.title = `Швидкість гри x${this.gameSpeed} (натисніть, щоб змінити)`;
+          this.dom.btnSpeed.classList.toggle('active', this.gameSpeed > 1);
+        });
+
+        // Пауза
+        this.dom.btnPause.addEventListener('click', () => {
+          if (this.state === 'PLAYING') {
+            this.state = 'PAUSED';
+            this.dom.btnPause.textContent = '▶';
+            this.dom.btnPause.classList.add('active');
+          } else if (this.state === 'PAUSED') {
+            this.state = 'PLAYING';
+            this.dom.btnPause.textContent = '⏸';
+            this.dom.btnPause.classList.remove('active');
+          }
+        });
+
+        // Звук
+        this.dom.btnSound.addEventListener('click', () => {
+          audio.init();
+          audio.muted = !audio.muted;
+          this.dom.btnSound.textContent = audio.muted ? '🔇' : '🔊';
+          this.dom.btnSound.classList.toggle('active', !audio.muted);
+        });
+
+        // Рестарт / Зміна карти
+        this.dom.btnRestart.addEventListener('click', () => {
+          this.state = 'MAP_SELECT';
+          this.dom.modalMapSelect.style.display = 'flex';
+          this.dom.modalDefeat.style.display = 'none';
+          this.dom.modalVictory.style.display = 'none';
+        });
+
+        this.dom.btnRetry.addEventListener('click', () => {
+          this.loadMap(this.currentMapId);
+        });
+
+        this.dom.btnVictoryRestart.addEventListener('click', () => {
+          this.state = 'MAP_SELECT';
+          this.dom.modalMapSelect.style.display = 'flex';
+          this.dom.modalVictory.style.display = 'none';
+        });
+
+        // Панель інспекції башти
+        this.dom.btnCollectEnergy.addEventListener('click', () => {
+          this.collectEnergy(this.selectedTower);
+        });
+        this.dom.btnUpgradeTower.addEventListener('click', () => {
+          if (this.state !== 'PLAYING') return;
+          if (this.selectedTower && this.selectedTower.canUpgrade()) {
+            const cost = this.selectedTower.getUpgradeCost();
+            if (this.energy >= cost) {
+              this.energy -= cost;
+              this.selectedTower.upgrade();
+              audio.upgrade();
+              this.updateInspectPanel();
+              this.updateUI();
+            }
+          }
+        });
+
+        this.dom.btnSellTower.addEventListener('click', () => {
+          if (this.state !== 'PLAYING') return;
+          if (this.selectedTower) {
+            this.collectEnergy(this.selectedTower);
+            const val = this.selectedTower.getSellValue();
+            this.energy += val;
+            audio.sell();
+            this.grid[this.selectedTower.row][this.selectedTower.col] = 0;
+            this.towers = this.towers.filter(t => t !== this.selectedTower);
+            this.selectedTower = null;
+            this.updateInspectPanel();
+            this.updateUI();
+          }
+        });
+
+        this.dom.btnCloseInspect.addEventListener('click', () => {
+          this.selectedTower = null;
+          this.updateInspectPanel();
+        });
+
+        // Взаємодія з полотном мишею та дотиком
+        const getCanvasCoords = (e) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : (e.clientX || 0);
+          const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : (e.clientY || 0);
+          const scaleX = this.canvas.width / rect.width;
+          const scaleY = this.canvas.height / rect.height;
+          return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+          };
+        };
+
+        this.canvas.addEventListener('mousemove', (e) => {
+          const pos = getCanvasCoords(e);
+          const col = Math.floor(pos.x / this.tileSize);
+          const row = Math.floor(pos.y / this.tileSize);
+          if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
+            this.hoverTile = { col, row };
+          } else {
+            this.hoverTile = null;
+          }
+        });
+
+        this.canvas.addEventListener('mouseleave', () => {
+          this.hoverTile = null;
+        });
+
+        this.canvas.addEventListener('click', (e) => {
+          audio.init();
+          const pos = getCanvasCoords(e);
+          const col = Math.floor(pos.x / this.tileSize);
+          const row = Math.floor(pos.y / this.tileSize);
+          this.handleCanvasClick(col, row);
+        });
+
+        // Підтримка мобільних тач-подій (touchstart / touchend)
+        this.canvas.addEventListener('touchstart', (e) => {
+          const pos = getCanvasCoords(e);
+          const col = Math.floor(pos.x / this.tileSize);
+          const row = Math.floor(pos.y / this.tileSize);
+          if (col >= 0 && col < this.cols && row >= 0 && row < this.rows) {
+            this.hoverTile = { col, row };
+          }
+        }, { passive: true });
+
+        this.canvas.addEventListener('touchend', (e) => {
+          if (e.changedTouches && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const fakeEvent = {
+              clientX: touch.clientX,
+              clientY: touch.clientY,
+              touches: []
+            };
+            audio.init();
+            const pos = getCanvasCoords(fakeEvent);
+            const col = Math.floor(pos.x / this.tileSize);
+            const row = Math.floor(pos.y / this.tileSize);
+            this.handleCanvasClick(col, row);
+            setTimeout(() => { this.hoverTile = null; }, 500);
+          }
+        });
+
+        // Кнопка Skip зверху
+        if (this.dom.btnTopSkip) {
+          this.dom.btnTopSkip.addEventListener('click', (e) => {
+            this.handleSkipClick(e);
+          });
+        }
+
+        // Клавіатурні скорочення
+        window.addEventListener('keydown', (e) => {
+          const loadoutShortcutTypes = this.getAvailableBuildTypes();
+          if (/^[1-9]$/.test(e.key)) {
+            const index = Number(e.key) - 1;
+            const type = loadoutShortcutTypes[index];
+            if (type) {
+              this.selectBuildCard(type);
+            }
+          }
+          if (e.code === 'Space') {
+            e.preventDefault();
+            if (!this.isWaveInProgress) {
+              this.startNextWave();
+            } else {
+              this.dom.btnPause.click();
+            }
+          }
+          if (e.key === 'Enter' || e.key === 'n' || e.key === 'N') {
+            e.preventDefault();
+            this.handleSkipClick(e);
+          }
+          if (e.key === 'u' || e.key === 'U' || e.key === 'г' || e.key === 'Г') {
+            this.dom.btnUpgradeTower.click();
+          }
+          if (e.key === 's' || e.key === 'S' || e.key === 'і' || e.key === 'І') {
+            this.dom.btnSellTower.click();
+          }
+          if (e.key === 'Escape') {
+            this.selectedTower = null;
+            this.updateInspectPanel();
+          }
+        });
+      }
+
+      handleSkipClick(e) {
+        this.startNextWave();
+      }
+
+      selectBuildCard(type) {
+        if (!type || !TOWER_TYPES[type]) {
+          return;
+        }
+
+        const currentProfile = window.playerProfile || loadPlayerProfile();
+        if (type !== 'POWER_PLANT' && !currentProfile.loadout.includes(type)) {
+          showToast('Виберіть одного з 5 активних юнітів для бою', 'error');
+          return;
+        }
+
+        this.selectedBuildType = type;
+        this.selectedTower = null;
+        this.updateInspectPanel();
+
+        document.querySelectorAll('.tower-card').forEach(c => {
+          c.classList.toggle('selected', c.getAttribute('data-type') === type);
+        });
+      }
+
+      getAvailableBuildTypes() {
+        const currentProfile = window.playerProfile || loadPlayerProfile();
+        const available = (currentProfile.loadout || []).filter(type => !!TOWER_TYPES[type]);
+        return [...(available.length ? available : ['SCOUT']), 'POWER_PLANT'];
+      }
+
+      renderBuildPanel() {
+        const availableTypes = this.getAvailableBuildTypes();
+        const panel = this.dom.buildPanel;
+        if (!panel) return;
+
+        panel.innerHTML = availableTypes.map((type, index) => {
+          const cfg = TOWER_TYPES[type];
+          const isNaval = Boolean(cfg && cfg.isNaval);
+          const shouldShow = this.currentMapId === 'PORT' ? true : !isNaval;
+          const selectedClass = this.selectedBuildType === type ? 'selected' : '';
+          return `
+            <div class="tower-card ${selectedClass}" data-type="${type}" title="${cfg.name}: ${cfg.desc}" style="display:${shouldShow ? 'flex' : 'none'};">
+              <span class="key-hint">${index + 1}</span>
+              <div class="tower-icon-box" style="color: ${cfg.levels[0].color || '#38bdf8'};">${GameArt.portrait(type, cfg.icon)}</div>
+              <div class="tower-card-info">
+                <span class="tower-card-name">${cfg.name}</span>
+                <span class="tower-card-cost">⚡ ${cfg.levels[0].cost}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (!availableTypes.includes(this.selectedBuildType)) {
+          this.selectedBuildType = availableTypes[0];
+        }
+
+        panel.querySelectorAll('.tower-card').forEach(card => {
+          card.addEventListener('click', () => {
+            this.selectBuildCard(card.getAttribute('data-type'));
+          });
+        });
+
+        document.querySelectorAll('.tower-card').forEach(c => {
+          c.classList.toggle('selected', c.getAttribute('data-type') === this.selectedBuildType);
+        });
+      }
+
+      handleCanvasClick(col, row) {
+        if (this.state !== 'PLAYING') return;
+        if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return;
+
+        const currentProfile = window.playerProfile || loadPlayerProfile();
+        if (this.selectedBuildType !== 'POWER_PLANT' && !currentProfile.loadout.includes(this.selectedBuildType)) {
+          showToast('Виберіть одного з 5 активних юнітів для бою', 'error');
+          return;
+        }
+
+        // Перевіряємо, чи там вже стоїть башта
+        const existingTower = this.towers.find(t => t.col === col && t.row === row);
+        if (existingTower) {
+          this.selectedTower = existingTower;
+          this.collectEnergy(existingTower);
+          this.updateInspectPanel();
+          return;
+        }
+
+        // Якщо клікнули на вільне місце (grid == 0) — будуємо башту
+        if (this.grid[row][col] === 0 && this.selectedBuildType) {
+          const cfg = TOWER_TYPES[this.selectedBuildType];
+          const cost = cfg.levels[0].cost;
+
+          if (this.energy >= cost) {
+            this.energy -= cost;
+            const newTower = new Tower(this.selectedBuildType, col, row, this.tileSize);
+            this.towers.push(newTower);
+            this.grid[row][col] = 3; // 3 = зайнято баштою
+            this.totalTowersBuilt++;
+            audio.build();
+
+            // Спалах частинок пилу
+            for (let i = 0; i < 8; i++) {
+              this.addParticle((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize, (Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50, '#94a3b8', 0.3, 3);
+            }
+
+            this.selectedTower = newTower;
+            this.updateInspectPanel();
+            this.updateUI();
+          } else {
+            // Бракує золота
+            this.addParticle((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize - 10, 0, -30, '#ef4444', 0.6, 13, true, 'Бракує енергії!');
+          }
+        } else {
+          // Клік по дорозі або перешкоді знімає вибір
+          this.selectedTower = null;
+          this.updateInspectPanel();
+        }
+      }
+
+      collectEnergy(tower) {
+        if (this.state !== 'PLAYING' || !tower || tower.typeId !== 'POWER_PLANT' || !this.towers.includes(tower)) return 0;
+        const amount = Math.floor(tower.storedEnergy);
+        if (amount < 1) return 0;
+        tower.storedEnergy -= amount;
+        this.energy += amount;
+        this.addParticle(tower.x, tower.y - 25, 0, -35, '#facc15', 1, 15, true, `+${amount} ⚡`);
+        audio.playBuy();
+        this.updateUI();
+        return amount;
+      }
+
+      updateInspectPanel() {
+        if (!this.selectedTower) {
+          this.dom.selectedPanel.style.display = 'none';
+          this.dom.buildPanel.style.display = 'flex';
+          return;
+        }
+
+        this.dom.buildPanel.style.display = 'none';
+        this.dom.selectedPanel.style.display = 'flex';
+
+        const t = this.selectedTower;
+        const cfg = t.getConfig();
+        const curData = t.getLevelData();
+        const nextData = t.getNextLevelData();
+        const powerPlant = t.typeId === 'POWER_PLANT';
+        this.dom.btnCollectEnergy.style.display = powerPlant ? 'inline-flex' : 'none';
+        this.dom.btnCollectEnergy.textContent = `⚡ Забрати ${Math.floor(t.storedEnergy)}`;
+        this.dom.btnCollectEnergy.disabled = this.state !== 'PLAYING' || t.storedEnergy < 1;
+
+        const maxLvl = cfg.levels.length;
+        this.dom.inspectName.textContent = `${cfg.name} (Рівень ${t.level} / ${maxLvl})`;
+        this.dom.inspectStars.textContent = '★'.repeat(t.level) + '☆'.repeat(maxLvl - t.level);
+
+        let specialText = '';
+        if (t.typeId === 'FALCON') specialText = ` | Радіус польоту: ${curData.flightRadius}px | Огляд/атака: ${curData.range}px`;
+        if (t.typeId === 'FACTORY') specialText = ` | Дохід за хвилю: ${curData.income} ⚡ | Не атакує`;
+        if (t.typeId === 'MILITARY_BASE') specialText = ` | Техніка: ${curData.vehicleName} (${curData.vehicleHp} HP) | Виїзд: ${curData.spawnInterval}с${curData.range ? ` | Дальність зброї: ${curData.range}px` : ''}`;
+        if (t.typeId === 'CANNON') specialText = ` | Сплеш: ${curData.splash}px`;
+        if (t.typeId === 'MAGE') specialText = ` | Сповільнення: ${Math.round(curData.slow * 100)}%${curData.freezeDuration ? `, замороження: ${curData.freezeDuration}с` : ''}`;
+        if (t.typeId === 'SNIPER') specialText = ` | Пріоритет: бос / найбільше HP${curData.critChance ? `, крит: ${Math.round(curData.critChance * 100)}%` : ''}`;
+        if (t.typeId === 'TESLA') specialText = ` | Стрибки: ${curData.chainCount}, дальність ланцюга: ${curData.chainRange}px`;
+        if (t.typeId === 'POISON') specialText = ` | Отрута: ${curData.dotTicks} тік. × ${curData.dotInterval}с`;
+        if (t.typeId === 'COASTAL_GUN') specialText = ` | Сплеш: ${curData.splash}px${curData.volleyShots ? ` | Залп: ${curData.volleyShots} снаряди!` : ''}`;
+        if (t.typeId === 'ROCKET_BOAT') specialText = ` | Ракети${curData.multiRocket ? ` | Залп ${curData.multiRocket} ракет!` : ''}`;
+        if (t.typeId === 'SEA_DRONE') specialText = ` | Сканер субмарин${curData.deepScan ? ' | Глибоке сканування!' : ''}`;
+
+        let statLine = `Шкода: ${curData.damage} | Радіус: ${curData.range} | Швидкість: ${curData.rate}с${specialText}`;
+        if (powerPlant) statLine = `${curData.name} | ${curData.energyRate} ⚡/с під час хвилі | Батарея: ${Math.floor(t.storedEnergy)} / ${curData.capacity} ⚡`;
+        if (t.typeId === 'FACTORY') statLine = `Дохід: ${curData.income} ⚡ за хвилю | Не атакує`;
+        if (t.typeId === 'MILITARY_BASE') statLine = `Шкода: ${curData.damage} | HP машини: ${curData.vehicleHp} | Перезарядка: ${curData.rate}с${specialText}`;
+        if (t.typeId === 'FALCON') statLine = `Шкода: ${curData.damage} | Перезарядка: ${curData.rate}с${specialText}`;
+        if (nextData && powerPlant) {
+          statLine += ` → ${nextData.energyRate} ⚡/с, батарея ${nextData.capacity} ⚡`;
+        } else if (nextData && t.typeId === 'FACTORY') {
+          statLine += ` (Наступний рівень: ${nextData.income} ⚡ за хвилю)`;
+        } else if (nextData && t.typeId === 'MILITARY_BASE') {
+          statLine += ` (Наступна техніка: ${nextData.vehicleName}, ${nextData.vehicleHp} HP)`;
+        } else if (nextData) {
+          statLine += ` (Наст. рівень: ⚔️${nextData.damage} 🎯${nextData.range} ⚡${nextData.rate}с)`;
+        }
+        this.dom.inspectStats.textContent = statLine;
+
+        if (t.canUpgrade()) {
+          const cost = t.getUpgradeCost();
+          this.dom.btnUpgradeTower.disabled = this.energy < cost;
+          this.dom.upgradeCost.textContent = cost;
+          this.dom.btnUpgradeTower.style.display = 'inline-flex';
+        } else {
+          this.dom.btnUpgradeTower.style.display = 'none'; // Максимальний рівень досягнуто
+        }
+
+        this.dom.sellValue.textContent = t.getSellValue();
+      }
+
+      updateUI() {
+        const totalWaves = this.waves.length || 25;
+        this.dom.energy.textContent = this.energy;
+        this.dom.lives.textContent = this.lives;
+        this.dom.wave.textContent = `${this.currentWaveIndex} / ${totalWaves} · ${this.difficulty.name}`;
+        this.dom.btnTopSkip.disabled = this.state !== 'PLAYING' || this.isWaveInProgress || this.currentWaveIndex >= totalWaves;
+        this.dom.btnTopSkip.textContent = this.isWaveInProgress ? 'Бій триває' : '▶ Хвиля';
+        this.dom.enemies.textContent = this.enemies.length + this.spawnQueue.length;
+
+        // Оновлення стану кнопок вибору башт за золотом
+        document.querySelectorAll('.tower-card').forEach(card => {
+          const type = card.getAttribute('data-type');
+          const cost = TOWER_TYPES[type].levels[0].cost;
+          const isAllowed = type === 'POWER_PLANT' || (window.playerProfile || loadPlayerProfile()).loadout.includes(type);
+          card.classList.toggle('disabled', !isAllowed || this.energy < cost);
+          card.title = isAllowed ? 'Підходить для бою' : 'Спочатку додайте цього юніта в 5 слотів';
+        });
+
+        // Кнопка хвилі
+        if (this.isWaveInProgress) {
+          this.dom.btnNextWave.disabled = true;
+          this.dom.btnNextWave.classList.remove('highlight');
+          this.dom.btnNextWave.textContent = `Хвиля ${this.currentWaveIndex} триває...`;
+        } else {
+          this.dom.btnNextWave.disabled = false;
+          this.dom.btnNextWave.classList.add('highlight');
+          const nextNum = this.currentWaveIndex + 1;
+          if (nextNum <= totalWaves) {
+            let label = `▶ Почати хвилю ${nextNum}`;
+            if (this.currentMapId === 'PORT') {
+              if (nextNum === 10) label = `⚠️ Хвиля 10: Десантний флот!`;
+              else if (nextNum === 20) label = `⚠️ Хвиля 20: Підводний човен!`;
+              else if (nextNum === 30) label = `💀 ХВИЛЯ 30: АВІАНОСЕЦЬ «АДМІРАЛ»!`;
+            } else {
+              if (nextNum === 5) label = `⚠️ Хвиля 5: БОС 1 (Голем)!`;
+              else if (nextNum === 10) label = `⚠️ Хвиля 10: БОС 2 (Владика)!`;
+              else if (nextNum === 15) label = `⚠️ Хвиля 15: БОС (Колос)!`;
+              else if (nextNum === 20) label = `⚠️ Хвиля 20: БОС (Архівампір)!`;
+              else if (nextNum === 25) label = `💀 ХВИЛЯ 25: ФІНАЛЬНИЙ БОС!`;
+            }
+            this.dom.btnNextWave.textContent = label;
+          } else {
+            this.dom.btnNextWave.textContent = this.currentMapId === 'PORT' ? '⚓ Порт захищено!' : '🏆 Королівство врятовано!';
+            this.dom.btnNextWave.disabled = true;
+          }
+        }
+
+        if (this.selectedTower) {
+          this.updateInspectPanel();
+        }
+      }
+
+      startNextWave() {
+        const totalWaves = this.waves.length || 25;
+        if (this.state !== 'PLAYING' || this.isWaveInProgress || this.currentWaveIndex >= totalWaves) return;
+
+        audio.init();
+        this.currentWaveIndex++;
+        const wave = this.waves[this.currentWaveIndex - 1];
+        this.isWaveInProgress = true;
+
+        // Копіюємо чергу спавну
+        this.spawnQueue = [...wave.queue];
+        if (this.currentWaveIndex >= this.difficulty.airEvery && this.currentWaveIndex % this.difficulty.airEvery === 0) {
+          const count = Math.min(3, 1 + Math.floor(this.currentWaveIndex / 12));
+          this.spawnQueue.unshift(...Array.from({ length: count }, () => scaleEnemyForDifficulty({
+            type: 'BOMBER', name: 'Ворожий бомбардувальник',
+            hp: 120 + this.currentWaveIndex * 18, speed: 75 + this.currentWaveIndex * 2,
+            reward: 30 + this.currentWaveIndex * 3, radius: 17, livesPenalty: 2,
+            color: '#ef4444', delay: 1.5
+          }, this.difficulty)));
+        }
+        this.spawnTimer = 0.5;
+
+        // Оповіщення хвилі
+        this.showWaveAnnouncer(`${this.difficulty.name} • ${wave.title}` + (this.spawnQueue.some(e => e.type === 'BOMBER') ? ' • ✈ Авіаналіт на базу!' : ''), wave.isBossWave);
+
+        if (wave.isBossWave) {
+          audio.bossSpawn();
+          if (this.currentMapId === 'PORT') audio.siren();
+        } else {
+          audio.waveStart();
+        }
+
+        this.updateUI();
+      }
+
+      showWaveAnnouncer(text, isBoss = false) {
+        this.dom.waveAnnouncer.textContent = text;
+        this.dom.waveAnnouncer.style.borderColor = isBoss ? 'var(--accent-red)' : 'var(--accent-gold)';
+        this.dom.waveAnnouncer.style.color = isBoss ? 'var(--accent-red)' : 'var(--accent-gold)';
+        this.dom.waveAnnouncer.classList.add('show');
+        setTimeout(() => {
+          this.dom.waveAnnouncer.classList.remove('show');
+        }, 2200);
+      }
+
+      addParticle(x, y, vx, vy, color, life, size, isText = false, text = '') {
+        this.particles.push(new Particle(x, y, vx, vy, color, life, size, isText, text));
+      }
+
+      payFactoryIncome(waveIndex) {
+        if (this.state !== 'PLAYING' || this.lives <= 0 || this.factoryPaidWaves.has(waveIndex)) return 0;
+        this.factoryPaidWaves.add(waveIndex);
+        let totalIncome = 0;
+        for (const tower of this.towers) {
+          if (tower.typeId !== 'FACTORY') continue;
+          const income = tower.getLevelData().income || 0;
+          if (income <= 0) continue;
+          totalIncome += income;
+          this.addParticle(tower.x, tower.y - 20, 0, -35, '#fbbf24', 1.1, 15, true, `+${income} ⚡`);
+        }
+        if (totalIncome > 0) {
+          this.energy += totalIncome;
+          audio.playBuy();
+          this.updateUI();
+        }
+        return totalIncome;
+      }
+
+      // Store each Tesla arc briefly; randomized midpoints produce the lightning zigzag.
+      addLightningEffect(start, end) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const length = Math.hypot(dx, dy) || 1;
+        const points = [{ x: start.x, y: start.y }];
+        const segments = 5;
+        for (let i = 1; i < segments; i++) {
+          const progress = i / segments;
+          const offset = (Math.random() - 0.5) * Math.min(18, length * 0.18);
+          points.push({
+            x: start.x + dx * progress - (dy / length) * offset,
+            y: start.y + dy * progress + (dx / length) * offset
+          });
+        }
+        points.push({ x: end.x, y: end.y });
+        this.lightningEffects.push({ points, life: 0.16, maxLife: 0.16 });
+      }
+
+      checkGameEnd() {
+        const totalWaves = this.waves.length || 25;
+        if (this.lives <= 0 && this.state === 'PLAYING') {
+          this.state = 'GAME_OVER';
+          audio.defeat();
+          this.dom.statDefeatWaves.textContent = Math.max(0, this.currentWaveIndex - 1);
+          this.dom.statDefeatKills.textContent = this.totalKills;
+          this.dom.statDefeatTowers.textContent = this.totalTowersBuilt;
+          this.dom.modalDefeat.style.display = 'flex';
+          this.dom.bossBar.style.display = 'none';
+        }
+
+        if (this.currentWaveIndex >= totalWaves && !this.isWaveInProgress && this.enemies.length === 0 && this.state === 'PLAYING') {
+          this.state = 'VICTORY';
+          audio.victory();
+          this.dom.statVictoryLives.textContent = this.lives;
+          this.dom.statVictoryKills.textContent = this.totalKills;
+          this.dom.statVictoryEnergy.textContent = this.energy;
+
+          // Оновити підзаголовок перемоги для порту (спеціальна скриня)
+          const subTitleEl = this.dom.modalVictory.querySelector('.modal-subtitle');
+          if (subTitleEl) {
+            if (this.currentMapId === 'PORT') {
+              subTitleEl.innerHTML = '⚓ <b>Всі 30 хвиль відбито!</b> Авіаносець «Адмірал» потоплено!<br>🎁 Ви отримали: <b>«Військово-морська скриня Адмірала»</b> (+1500🪙 та звання Командувача Флоту)!';
+            } else {
+              subTitleEl.textContent = 'Усі 25 хвиль відбито, Архідемона Руїни знищено, а королівство врятовано!';
+            }
+          }
+
+          this.dom.modalVictory.style.display = 'flex';
+          this.dom.bossBar.style.display = 'none';
+        }
+      }
+
+      update(dt) {
+        if (this.state !== 'PLAYING') return;
+
+        // Спавн ворогів черги
+        if (this.spawnQueue.length > 0) {
+          this.spawnTimer -= dt;
+          if (this.spawnTimer <= 0) {
+            const nextEnemyData = this.spawnQueue.shift();
+            this.enemies.push(new Enemy(nextEnemyData, this.pathPixelPoints));
+            this.spawnTimer = nextEnemyData.delay || 0.7;
+          }
+        }
+
+        // Оновлення ворогів
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+          const e = this.enemies[i];
+          e.update(dt, this);
+          if (e.dead) {
+            this.enemies.splice(i, 1);
+          }
+        }
+
+        // Оновлення веж
+        this.towers.forEach(t => t.update(dt, this));
+
+        // Оновлення мобільної техніки військових баз
+        for (let i = this.vehicles.length - 1; i >= 0; i--) {
+          const vehicle = this.vehicles[i];
+          vehicle.update(dt, this);
+          if (vehicle.dead) this.vehicles.splice(i, 1);
+        }
+
+        // Оновлення снарядів
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+          const p = this.projectiles[i];
+          p.update(dt, this);
+          if (p.dead) {
+            this.projectiles.splice(i, 1);
+          }
+        }
+
+        // Оновлення частинок
+        this.lightningEffects = this.lightningEffects.filter(effect => {
+          effect.life -= dt;
+          return effect.life > 0;
+        });
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          const pt = this.particles[i];
+          pt.update(dt);
+          if (pt.life <= 0) {
+            this.particles.splice(i, 1);
+          }
+        }
+
+        // Перевірка завершення хвилі
+        if (this.isWaveInProgress && this.spawnQueue.length === 0 && this.enemies.length === 0) {
+          this.isWaveInProgress = false;
+          const wave = this.waves[this.currentWaveIndex - 1];
+          this.energy += wave.reward;
+          this.payFactoryIncome(this.currentWaveIndex);
+          this.addParticle(500, 300, 0, -40, '#facc15', 1.2, 18, true, `Хвилю пройдено! +${wave.reward}⚡`);
+          this.updateUI();
+        }
+
+        // Оновлення панелі боса вгорі полотна
+        const activeBoss = this.enemies.find(e => e.isBoss);
+        if (activeBoss) {
+          this.dom.bossBar.style.display = 'flex';
+          this.dom.bossTitle.textContent = `БОС: ${activeBoss.name.toUpperCase()}`;
+          this.dom.bossHpText.textContent = `${Math.max(0, Math.round(activeBoss.hp))} / ${activeBoss.maxHp}`;
+          const pct = Math.max(0, (activeBoss.hp / activeBoss.maxHp) * 100);
+          this.dom.bossHpFill.style.width = `${pct}%`;
+        } else {
+          this.dom.bossBar.style.display = 'none';
+        }
+
+        this.checkGameEnd();
+      }
+
+      draw() {
+        const ctx = this.ctx;
+        ctx.save();
+
+        // Ефект тремтіння екрану
+        if (this.screenShakeTime > 0) {
+          const shakeAmt = 5;
+          ctx.translate((Math.random() - 0.5) * shakeAmt, (Math.random() - 0.5) * shakeAmt);
+        }
+
+        // 1. Малювання статичного кешованого фону карти
+        ctx.drawImage(this.bgCanvas, 0, 0);
+        if (this.mapData?.isNavalMap) NavalArt.harborLights(ctx, this.mapData, this.navalTime);
+
+        // 2. Підсвітка клітинки під курсором миші / пальцем
+        if (this.hoverTile && this.state === 'PLAYING') {
+          const { col, row } = this.hoverTile;
+          const isValid = this.grid[row][col] === 0;
+          ctx.fillStyle = isValid ? 'rgba(34, 197, 94, 0.28)' : 'rgba(239, 68, 68, 0.28)';
+          ctx.fillRect(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize);
+          ctx.strokeStyle = isValid ? '#22c55e' : '#ef4444';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(col * this.tileSize, row * this.tileSize, this.tileSize, this.tileSize);
+
+          // Попередній перегляд радіусу вежі при наведенні
+          if (isValid && this.selectedBuildType && !this.selectedTower) {
+            const buildData = TOWER_TYPES[this.selectedBuildType].levels[0];
+            const range = buildData.range || 0;
+            ctx.beginPath();
+            ctx.arc((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize, range, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            if (this.selectedBuildType === 'FALCON') {
+              ctx.beginPath();
+              ctx.ellipse((col + 0.5) * this.tileSize, (row + 0.5) * this.tileSize, buildData.flightRadius, buildData.flightRadius * 0.62, 0, 0, Math.PI * 2);
+              ctx.strokeStyle = 'rgba(96, 165, 250, 0.8)';
+              ctx.setLineDash([5, 5]);
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+          }
+        }
+
+        // 3. Малювання башт
+        this.towers.forEach(t => {
+          t.draw(ctx, t === this.selectedTower);
+        });
+
+        // 4. Малювання ворогів
+        this.enemies.forEach(e => {
+          e.draw(ctx);
+        });
+
+        // 4.1 Військова техніка на маршруті ворогів
+        this.vehicles.forEach(vehicle => vehicle.draw(ctx));
+
+        // 5. Малювання снарядів
+        this.projectiles.forEach(p => {
+          p.draw(ctx);
+        });
+
+        // Tesla arcs glow briefly above units and below floating damage text.
+        this.lightningEffects.forEach(effect => {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, effect.life / effect.maxLife);
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 4;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 13;
+          ctx.beginPath();
+          effect.points.forEach((point, index) => index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y));
+          ctx.stroke();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.shadowBlur = 0;
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // 6. Малювання частинок та тексту
+        this.particles.forEach(pt => {
+          pt.draw(ctx);
+        });
+
+        ctx.restore();
+      }
+
+      loop(timestamp) {
+        const rawDt = (timestamp - this.lastTime) / 1000;
+        this.lastTime = timestamp;
+
+        // Cap real frame time, then split accelerated time into small simulation steps.
+        const simulationDt = Math.min(rawDt, 0.1) * this.gameSpeed;
+        const maxStep = 1 / 60;
+        const stepCount = Math.max(1, Math.ceil(simulationDt / maxStep - 1e-9));
+        const dt = Math.min(simulationDt / stepCount, maxStep);
+        if (this.state === 'PLAYING') this.navalTime += simulationDt;
+
+        if (this.screenShakeTime > 0) {
+          this.screenShakeTime = Math.max(0, this.screenShakeTime - simulationDt);
+        }
+
+        for (let step = 0; step < stepCount; step++) this.update(dt);
+        this.draw();
+
+        // Оновлюємо лічильники UI
+        if (this.state === 'PLAYING') {
+          this.dom.enemies.textContent = this.enemies.length + this.spawnQueue.length;
+        }
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+    }
+
+    const PLAYER_PROFILE_KEY = 'tds_player_profile_v1';
+    const DEFAULT_PLAYER_PROFILE = {
+      coins: 12000,
+      crystals: 500,
+      level: 1,
+      xp: 0,
+      ownedUnits: ['SCOUT'],
+      loadout: ['SCOUT']
+    };
+
+    function loadPlayerProfile() {
+      try {
+        const raw = localStorage.getItem(PLAYER_PROFILE_KEY);
+        if (!raw) return { ...DEFAULT_PLAYER_PROFILE };
+        const parsed = JSON.parse(raw);
+        return {
+          ...DEFAULT_PLAYER_PROFILE,
+          ...parsed,
+          ownedUnits: Array.isArray(parsed.ownedUnits) && parsed.ownedUnits.length ? parsed.ownedUnits : ['SCOUT'],
+          loadout: Array.isArray(parsed.loadout) && parsed.loadout.length ? parsed.loadout.slice(0, 5) : ['SCOUT']
+        };
+      } catch (e) {
+        return { ...DEFAULT_PLAYER_PROFILE };
+      }
+    }
+
+    function savePlayerProfile(profile) {
+      try {
+        localStorage.setItem(PLAYER_PROFILE_KEY, JSON.stringify(profile));
+      } catch (e) {}
+    }
+
+    function getUnitConfig(unitId) {
+      return TDS_UNITS_CONFIG.find(unit => unit.id === unitId) || TDS_UNITS_CONFIG[0];
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `toast-msg ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 2900);
+    }
+
+    function syncMenuCurrencyUI(profile) {
+      const coinsEl = document.getElementById('menu-coins-val');
+      const crystalsEl = document.getElementById('menu-crystals-val');
+      if (coinsEl) coinsEl.textContent = String(profile.coins);
+      if (crystalsEl) crystalsEl.textContent = String(profile.crystals);
+    }
+
+    function renderHeroLoadoutPreview(profile) {
+      const container = document.getElementById('hero-equipped-slots');
+      if (!container) return;
+      const slots = Array.from({ length: 5 }, (_, index) => {
+        const unitId = profile.loadout[index];
+        if (!unitId) {
+          return '<div class="hero-slot-badge hero-slot-empty">Порожньо</div>';
+        }
+        const unit = getUnitConfig(unitId);
+        return `<div class="hero-slot-badge" title="${unit.name}">${GameArt.portrait(unit.id, unit.icon)}</div>`;
+      }).join('');
+      container.innerHTML = slots;
+    }
+
+    function renderUnitCollectionUI() {
+      const profile = window.playerProfile || loadPlayerProfile();
+      const filter = window.unitFilter || 'ALL';
+      const cardsEl = document.getElementById('unit-cards-grid');
+      const detailEl = document.getElementById('unit-detail-panel');
+      const loadoutEl = document.getElementById('equipped-slots-container');
+      const countEl = document.getElementById('loadout-count-text');
+
+      if (countEl) countEl.textContent = `${profile.loadout.length} / 5`;
+
+      if (loadoutEl) {
+        loadoutEl.innerHTML = Array.from({ length: 5 }, (_, index) => {
+          const unitId = profile.loadout[index];
+          const unit = unitId ? getUnitConfig(unitId) : null;
+          return `
+            <div class="loadout-slot-card ${unit ? 'filled' : ''}" data-slot-index="${index}" data-unit-id="${unitId || ''}">
+              <span class="loadout-slot-num">${index + 1}</span>
+              ${unit ? '<span class="loadout-slot-unequip">✕</span>' : ''}
+              <div class="loadout-slot-icon">${unit ? GameArt.portrait(unit.id, unit.icon) : '➕'}</div>
+              <div class="loadout-slot-name">${unit ? unit.name : 'Вільно'}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (cardsEl) {
+        const visibleUnits = TDS_UNITS_CONFIG.filter(unit => filter === 'ALL' || unit.rarity === filter);
+        cardsEl.innerHTML = visibleUnits.map(unit => {
+          const owned = profile.ownedUnits.includes(unit.id);
+          const equipped = profile.loadout.includes(unit.id);
+          const statusClass = !owned ? 'status-locked' : equipped ? 'status-equipped' : 'status-owned';
+          const statusText = !owned ? 'Заблоковано' : equipped ? 'У строю' : 'Доступно';
+          const buttonText = !owned ? `КУПИТИ ${unit.cost} 🪙` : (equipped ? 'ЗНЯТИ' : 'ВИБРАТИ');
+          return `
+            <div class="unit-item-card rarity-${unit.rarity} ${window.selectedUnitId === unit.id ? 'selected' : ''}" data-unit-id="${unit.id}" style="border-color: ${owned ? '' : '#475569'};">
+              <div class="unit-card-icon">${GameArt.portrait(unit.id, unit.icon)}</div>
+              <div class="unit-card-title">${unit.name}</div>
+              <div class="unit-card-role">${unit.role}</div>
+              <div class="unit-card-status ${statusClass}">${statusText}</div>
+              <div style="font-size: 11px; font-weight: 800; color: #f59e0b; margin-top: 2px;">${unit.cost} 🪙</div>
+              <button class="btn-military-primary" data-buy-unit="${unit.id}" style="width:100%; font-size: 11px; padding: 8px 10px;">${buttonText}</button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const selectedConfig = getUnitConfig(window.selectedUnitId || profile.loadout[0] || 'SCOUT');
+      if (detailEl) {
+        detailEl.innerHTML = `
+          <div class="detail-header">
+            <div class="detail-icon-box">${GameArt.portrait(selectedConfig.id, selectedConfig.icon)}</div>
+            <div class="detail-title-group">
+              <h3>${selectedConfig.name}</h3>
+              <span class="detail-rarity-pill" style="background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3);">${selectedConfig.rarity}</span>
+            </div>
+          </div>
+          <div style="font-size: 12px; color: #cbd5e1; line-height: 1.5;">${selectedConfig.desc}</div>
+          <div class="detail-stats-grid">
+            <div class="detail-stat-item"><span>Ціна</span><span class="detail-stat-val">${selectedConfig.cost} 🪙</span></div>
+            <div class="detail-stat-item"><span>Рідкість</span><span class="detail-stat-val">${selectedConfig.rarity}</span></div>
+            <div class="detail-stat-item"><span>Роль</span><span class="detail-stat-val">${selectedConfig.role}</span></div>
+            <div class="detail-stat-item"><span>Швидкість</span><span class="detail-stat-val">${selectedConfig.bulletSpeed} px/s</span></div>
+          </div>
+          <div class="detail-levels-section">
+            <div class="detail-levels-title">Покращення</div>
+            <div class="level-row">
+              <div class="level-row-head"><span>Рівень 1</span><span>База</span></div>
+              <div class="level-row-desc">Швидкий стартовий рівень, стабільна атака по слабких цілях.</div>
+            </div>
+            <div class="level-row">
+              <div class="level-row-head"><span>Рівень 3</span><span>Посилення</span></div>
+              <div class="level-row-desc">Збільшується дальність і урон, додається спеціальна тактика.</div>
+            </div>
+            <div class="level-row">
+              <div class="level-row-head"><span>Рівень 5</span><span>Макс. форма</span></div>
+              <div class="level-row-desc">Постає потужна версія з епічною зброєю та покращеною ефективністю.</div>
+            </div>
+          </div>
+          <div class="detail-actions-box">
+            <button class="btn-military-primary" data-buy-unit="${selectedConfig.id}" style="width:100%;">${profile.ownedUnits.includes(selectedConfig.id) ? (profile.loadout.includes(selectedConfig.id) ? 'ЗНЯТИ ЗІ СЛОТІВ' : 'ВИБРАТИ В 5 СЛОТІВ') : `КУПИТИ ЗА ${selectedConfig.cost} 🪙`}</button>
+          </div>
+        `;
+      }
+
+      syncMenuCurrencyUI(profile);
+      renderHeroLoadoutPreview(profile);
+      const allTabs = document.querySelectorAll('.filter-tab-btn');
+      allTabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === filter);
+      });
+    }
+
+    function handleUnitBuy(unitId) {
+      const profile = window.playerProfile || loadPlayerProfile();
+      const unit = getUnitConfig(unitId);
+      if (profile.ownedUnits.includes(unitId)) {
+        const isEquipped = profile.loadout.includes(unitId);
+        if (isEquipped) {
+          profile.loadout = profile.loadout.filter(id => id !== unitId);
+          showToast(`${unit.name} знято з активного набору`, 'gold');
+        } else {
+          if (profile.loadout.length >= 5) {
+            showToast('Усі 5 слотів вже зайняті. Спочатку звільніть один.', 'error');
+            return;
+          }
+          profile.loadout.push(unitId);
+          showToast(`${unit.name} додано до бойового набору`, 'success');
+        }
+      } else {
+        if (profile.coins < unit.cost) {
+          showToast('Недостатньо монет для покупки цього юніта', 'error');
+          return;
+        }
+        profile.coins -= unit.cost;
+        profile.ownedUnits.push(unitId);
+        if (profile.loadout.length < 5) {
+          profile.loadout.push(unitId);
+        }
+        showToast(`${unit.name} куплено за ${unit.cost} 🪙`, 'success');
+      }
+      savePlayerProfile(profile);
+      window.playerProfile = profile;
+      renderUnitCollectionUI();
+      if (window.game) {
+        window.game.selectedBuildType = profile.loadout[0] || 'SCOUT';
+        window.game.renderBuildPanel();
+      }
+    }
+
+    function bindUnitSelectionUI() {
+      const cardsEl = document.getElementById('unit-cards-grid');
+      if (!cardsEl) return;
+
+      cardsEl.addEventListener('click', (event) => {
+        const buyButton = event.target.closest('[data-buy-unit]');
+        if (buyButton) {
+          event.stopPropagation();
+          handleUnitBuy(buyButton.dataset.buyUnit);
+          return;
+        }
+
+        const card = event.target.closest('.unit-item-card');
+        if (!card) return;
+        const id = card.dataset.unitId;
+        if (id) {
+          window.selectedUnitId = id;
+          renderUnitCollectionUI();
+          if (window.innerWidth <= 860) {
+            document.getElementById('unit-detail-panel').scrollIntoView({ block: 'start', behavior: 'instant' });
+          }
+        }
+      });
+
+      const slotsEl = document.getElementById('equipped-slots-container');
+      if (slotsEl) {
+        slotsEl.addEventListener('click', (event) => {
+          const slot = event.target.closest('.loadout-slot-card');
+          if (!slot) return;
+          const unitId = slot.dataset.unitId;
+          if (unitId) {
+            handleUnitBuy(unitId);
+          }
+        });
+      }
+
+      document.querySelectorAll('.filter-tab-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          window.unitFilter = button.dataset.filter || 'ALL';
+          renderUnitCollectionUI();
+        });
+      });
+
+      const detailPanel = document.getElementById('unit-detail-panel');
+      if (detailPanel) {
+        detailPanel.addEventListener('click', (event) => {
+          const btn = event.target.closest('[data-buy-unit]');
+          if (!btn) return;
+          handleUnitBuy(btn.dataset.buyUnit);
+        });
+      }
+    }
+
+    // Запуск гри після завантаження сторінки
+    window.addEventListener('DOMContentLoaded', () => {
+      window.game = new GameEngine();
+
+      const mainMenu = document.getElementById('main-menu-overlay');
+      const modalMode = document.getElementById('modal-mode-select');
+      const modalUnits = document.getElementById('modal-units');
+      const modalShop = document.getElementById('modal-shop');
+      const modalQuests = document.getElementById('modal-quests');
+      const modalSettings = document.getElementById('modal-settings');
+      const modalMap = document.getElementById('modal-map-select');
+
+      const closeAllMenus = () => {
+        [modalMode, modalUnits, modalShop, modalQuests, modalSettings, modalMap].forEach(modal => {
+          if (modal) modal.style.display = 'none';
+        });
+        if (mainMenu) mainMenu.style.display = 'flex';
+      };
+
+      const openModal = (modal) => {
+        if (!modal) return;
+        [modalMode, modalUnits, modalShop, modalQuests, modalSettings, modalMap].forEach(item => {
+          if (item && item !== modal) item.style.display = 'none';
+        });
+        if (mainMenu) mainMenu.style.display = 'none';
+        modal.style.display = 'flex';
+      };
+
+      // Головне меню -> режими
+      document.getElementById('btn-main-play')?.addEventListener('click', () => {
+        openModal(modalMode);
+      });
+
+      // Навігація головного меню
+      document.getElementById('btn-nav-units')?.addEventListener('click', () => openModal(modalUnits));
+      document.getElementById('btn-nav-shop')?.addEventListener('click', () => openModal(modalShop));
+      document.getElementById('btn-nav-quests')?.addEventListener('click', () => openModal(modalQuests));
+      document.getElementById('btn-nav-settings')?.addEventListener('click', () => openModal(modalSettings));
+
+      // Кнопки повернення назад
+      document.getElementById('btn-back-mode-to-menu')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-back-units-to-menu')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-back-shop-to-menu')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-back-quests-to-menu')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-save-settings')?.addEventListener('click', () => {
+        audio.playBuy();
+        closeAllMenus();
+      });
+
+      // Закриття модальних вікон
+      document.getElementById('btn-close-mode-modal')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-close-units-modal')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-close-shop-modal')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-close-quests-modal')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-close-settings-modal')?.addEventListener('click', closeAllMenus);
+      document.getElementById('btn-close-map-modal')?.addEventListener('click', () => {
+        closeAllMenus();
+        if (window.game && window.game.state === 'PLAYING') {
+          window.game.state = 'MAP_SELECT';
+        }
+      });
+
+      // Вибір режиму -> карта
+      document.querySelectorAll('.mode-card').forEach(card => {
+        card.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            event.stopPropagation();
+            card.click();
+          }
+        });
+        card.addEventListener('click', () => {
+          audio.playClick();
+          window.game.selectedDifficulty = card.dataset.mode;
+          document.querySelectorAll('.mode-card').forEach(item => {
+            item.setAttribute('aria-pressed', String(item === card));
+          });
+          const difficulty = GAME_DIFFICULTIES[card.dataset.mode];
+          document.getElementById('map-difficulty-summary').textContent = `Складність: ${difficulty.name} · ${difficulty.startEnergy} енергії · ${difficulty.lives} життів`;
+          modalMode.style.display = 'none';
+          modalMap.style.display = 'flex';
+          if (window.game && typeof window.game.selectBuildCard === 'function') {
+            const firstLoadoutType = (window.playerProfile || loadPlayerProfile()).loadout[0] || 'SCOUT';
+            window.game.selectedBuildType = firstLoadoutType;
+            window.game.selectBuildCard(firstLoadoutType);
+          }
+        });
+      });
+
+      // Кнопка "Назад до вибору режиму" з карти
+      document.getElementById('btn-back-map-to-mode')?.addEventListener('click', () => {
+        modalMap.style.display = 'none';
+        modalMode.style.display = 'flex';
+      });
+
+      // Налаштування стали функціональними
+      const musicSlider = document.getElementById('slider-music');
+      const sfxSlider = document.getElementById('slider-sfx');
+      const musicValue = document.getElementById('label-music-val');
+      const sfxValue = document.getElementById('label-sfx-val');
+      const particlesBtn = document.getElementById('btn-toggle-particles');
+
+      const syncSettingText = () => {
+        if (musicSlider && musicValue) musicValue.textContent = `${musicSlider.value}%`;
+        if (sfxSlider && sfxValue) sfxValue.textContent = `${sfxSlider.value}%`;
+        if (particlesBtn) particlesBtn.textContent = 'УВІМКНЕНО';
+      };
+
+      musicSlider?.addEventListener('input', syncSettingText);
+      sfxSlider?.addEventListener('input', syncSettingText);
+      particlesBtn?.addEventListener('click', () => {
+        const isOn = particlesBtn.textContent !== 'ВИМКНЕНО';
+        particlesBtn.textContent = isOn ? 'ВИМКНЕНО' : 'УВІМКНЕНО';
+        particlesBtn.style.color = isOn ? '#ef4444' : '#22c55e';
+        particlesBtn.style.borderColor = isOn ? '#ef4444' : '#22c55e';
+      });
+      document.getElementById('btn-reset-profile')?.addEventListener('click', () => {
+        audio.defeat();
+        alert('Профіль скинуто до стандартного стану.');
+      });
+
+      // Кнопки магазину / скринь
+      document.getElementById('btn-buy-crate-common')?.addEventListener('click', () => {
+        const hasCoins = Number(document.getElementById('menu-coins-val')?.textContent || 0) >= 300;
+        if (!hasCoins) {
+          alert('Недостатньо монет для звичайної скрині.');
+          return;
+        }
+        audio.playBuy();
+        document.getElementById('menu-coins-val').textContent = String(Number(document.getElementById('menu-coins-val').textContent) - 300);
+        document.getElementById('crate-opening-overlay').style.display = 'flex';
+        document.getElementById('crate-anim-icon').textContent = '📦';
+        document.getElementById('crate-reward-box').style.display = 'block';
+        document.getElementById('crate-reward-content').textContent = '+420 🪙';
+      });
+
+      document.getElementById('btn-close-crate-reward')?.addEventListener('click', () => {
+        document.getElementById('crate-opening-overlay').style.display = 'none';
+      });
+
+      // Доступ до головного меню з бойової панелі
+      document.getElementById('btn-menu')?.addEventListener('click', () => {
+        closeAllMenus();
+        if (window.game) {
+          window.game.state = 'MAP_SELECT';
+          window.game.dom.modalMapSelect.style.display = 'none';
+          window.game.dom.modalDefeat.style.display = 'none';
+          window.game.dom.modalVictory.style.display = 'none';
+        }
+      });
+
+      window.playerProfile = loadPlayerProfile();
+      window.unitFilter = 'ALL';
+      window.selectedUnitId = window.playerProfile.loadout[0] || 'SCOUT';
+      if (window.game) {
+        window.game.selectedBuildType = window.playerProfile.loadout[0] || 'SCOUT';
+        window.game.renderBuildPanel();
+      }
+      renderUnitCollectionUI();
+      bindUnitSelectionUI();
+      syncMenuCurrencyUI(window.playerProfile);
+      renderHeroLoadoutPreview(window.playerProfile);
+      syncSettingText();
+    });
