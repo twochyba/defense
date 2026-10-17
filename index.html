@@ -67,10 +67,16 @@
         <span class="status-pulse-dot"></span> БАЗА В БОЙОВІЙ ГОТОВНОСТІ &bull; СИСТЕМИ ОБОРОНИ АКТИВНІ
       </div>
 
-      <button id="btn-main-play" class="btn-hero-play" title="Розпочати бій">
-        <span class="play-icon">⚔️</span>
-        <span class="play-label">ГРАТИ</span>
-      </button>
+      <div class="hero-action-buttons">
+        <button id="btn-main-play" class="btn-hero-play" title="Розпочати бій">
+          <span class="play-icon">⚔️</span>
+          <span class="play-label">ГРАТИ</span>
+        </button>
+        <button id="btn-test-cheat" class="nav-tab-btn hero-cheat-btn" title="Відкрити всі карти та отримати Ковбоя для тестування">
+          <span class="tab-icon">🧪</span>
+          <span class="tab-text">ЧИТ: ТЕСТ</span>
+        </button>
+      </div>
 
       <!-- ПЕРЕГЛЯД СПОРЯДЖЕННЯ (5 СЛОТІВ) -->
       <div class="hero-loadout-preview">
@@ -622,6 +628,17 @@
           <p class="map-desc">
             Військово-морська база під атакою! Десантні кораблі, підводні човни та важкі есмінці. 30 хвиль. Фінальний бос — авіаносець «Адмірал»!
           </p>
+        </div>
+
+        <div class="map-select-card" data-map="WESTERN">
+          <div class="map-preview-thumb">
+            <canvas class="map-preview-canvas" id="preview-western" width="500" height="300"></canvas>
+          </div>
+          <div class="map-name">
+            <span>🤠 Дикий Захід</span>
+            <span class="map-diff diff-hard">Складна</span>
+          </div>
+          <p class="map-desc">Полегшена карта: починайте з 400 енергії. Пройдіть хвилі, щоб отримати юніта Ковбоя!</p>
         </div>
       </div>
 

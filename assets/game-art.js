@@ -158,6 +158,22 @@ const GameArt = {
     // Decor positions match the blocked building cells exactly.
     for (const prop of map.decorations || []) {
       const x = (prop.x + 0.5) * 40, y = (prop.y + 0.5) * 40;
+      if (prop.type === 'mountain') {
+        ctx.save();
+        ctx.translate(x + 20, y + 20);
+        ctx.scale(2, 2);
+        const x = 0, y = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(x, y + 13, 18, 7, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3f4650';
+        ctx.beginPath(); ctx.moveTo(x - 19, y + 12); ctx.lineTo(x - 13, y - 5); ctx.lineTo(x - 5, y + 1); ctx.lineTo(x + 2, y - 16); ctx.lineTo(x + 19, y + 12); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#77818c';
+        ctx.beginPath(); ctx.moveTo(x - 13, y - 5); ctx.lineTo(x - 7, y + 1); ctx.lineTo(x - 2, y - 2); ctx.lineTo(x + 2, y - 16); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.moveTo(x - 3, y - 9); ctx.lineTo(x + 2, y - 16); ctx.lineTo(x + 7, y - 7); ctx.lineTo(x + 3, y - 9); ctx.lineTo(x + 1, y - 4); ctx.closePath(); ctx.fill();
+        ctx.restore();
+        continue;
+      }
       const image = this.images[prop.type === 'tree' ? 'pine' : 'rock'];
       if (image) ctx.drawImage(image, x - 22, y - 23, 44, 44);
       if (prop.type === 'crystal' || prop.type === 'lavaVent') {

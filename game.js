@@ -3,11 +3,12 @@ const CONFIG = {
   limits: { farm: 6, weak: 6, strong: 4 },
   weakMaxDps: 15, startCoins: 100, sellRate: 0.6,
   farm: { cost: 60, growth: 1.2, income: 5, interval: 3, hp: 100, enemyDps: 7, attackRange: 58 },
-  detectorRange: 165, mapOrder: ['VALLEY', 'LAVA', 'PORT']
+  detectorRange: 165, mapOrder: ['VALLEY', 'LAVA', 'PORT', 'WESTERN']
 };
 // rate в старых юнитах — секунды между выстрелами, attackSpeed — выстрелы в секунду.
 function unitDps(data) { return data.damage * (data.attackSpeed ?? (data.rate > 0 ? 1 / data.rate : 0)); }
 function unitCategory(type, data = TOWER_TYPES[type].levels[0]) {
+  if (type === 'COWBOY') return 'weak';
   return ['FARM', 'POWER_PLANT', 'FACTORY'].includes(type) ? 'farm' : unitDps(data) <= CONFIG.weakMaxDps ? 'weak' : 'strong';
 }
 function completedMaps() {
@@ -389,6 +390,10 @@ function refreshMapLocks() {
         bulletSpeed: 550
       },
       {
+        id: 'COWBOY', name: 'Ковбой', icon: '🤠', rarity: 'EPIC', cost: 0, crystalsCost: 0,
+        role: 'Стрілець із нагородою', desc: 'Середній урон. Кожен шостий постріл приносить 50 енергії. Відкривається за проходження Дикого Заходу.', bulletSpeed: 520
+      },
+      {
         id: 'GUNNER',
         name: 'Кулеметник',
         icon: '🎯',
@@ -549,6 +554,16 @@ function refreshMapLocks() {
           { cost: 660, damage: 52, range: 160, rate: 0.25, upgradeCost: 400, sellValue: 462, color: '#38bdf8', name: 'Тактичний карабін' },
           { cost: 1060, damage: 95, range: 180, rate: 0.20, upgradeCost: 650, sellValue: 742, color: '#0ea5e9', name: 'Подвійні пістолети-кулемети' },
           { cost: 1710, damage: 160, range: 205, rate: 0.16, upgradeCost: 0,   sellValue: 1197, color: '#0284c7', name: 'Спецпризначенець «Авангард»' }
+        ]
+      },
+      COWBOY: {
+        id: 'COWBOY', name: 'Ковбой', icon: '🤠', rarity: 'EPIC',
+        desc: '4 рівні покращення · кожен 6-й постріл дає +50 енергії', bulletSpeed: 520,
+        levels: [
+          { cost: 350, damage: 15, range: 155, rate: 1, upgradeCost: 300, sellValue: 245, color: '#d6a15e', name: 'Ковбой-новачок' },
+          { cost: 600, damage: 21, range: 165, rate: 0.95, upgradeCost: 550, sellValue: 665, color: '#c08457', name: 'Влучний стрілець' },
+          { cost: 950, damage: 28, range: 180, rate: 0.9, upgradeCost: 850, sellValue: 1330, color: '#b77943', name: 'Швидкий револьвер' },
+          { cost: 1400, damage: 36, range: 195, rate: 0.8, upgradeCost: 0, sellValue: 2170, color: '#fbbf24', name: 'Легенда Заходу' }
         ]
       },
 
@@ -864,8 +879,14 @@ function refreshMapLocks() {
     Object.assign(TOWER_TYPES.ARCHER.levels[0], { cost: 50, damage: 10, rate: 1 });
     Object.assign(TOWER_TYPES.CANNON.levels[0], { cost: 220, damage: 60, rate: 2 });
     Object.assign(TOWER_TYPES.MAGE.levels[0], { cost: 150, damage: 22, rate: 1, splash: 48 });
-    // Остальные военные юниты и их улучшения остаются в игре.
-    for (const cfg of Object.values(TOWER_TYPES)) for (const data of cfg.levels) data.attackSpeed = data.rate > 0 ? 1 / data.rate : 0;
+    // Зменшення бойового урону: Розвідник -20%, решта юнітів -10%.
+    for (const [type, cfg] of Object.entries(TOWER_TYPES)) for (const data of cfg.levels) {
+      const damageScale = type === 'SCOUT' ? 0.8 : 0.9;
+      for (const key of ['damage', 'sentryDmg', 'supportDamage', 'collisionDamage']) {
+        if (Number.isFinite(data[key]) && data[key] > 0) data[key] = Math.max(1, Math.round(data[key] * damageScale));
+      }
+      data.attackSpeed = data.rate > 0 ? 1 / data.rate : 0;
+    }
 
     const MAP_DEFINITIONS = {
       VALLEY: {
@@ -899,7 +920,8 @@ function refreshMapLocks() {
           { type: 'tree', x: 2, y: 1 }, { type: 'tree', x: 8, y: 1 }, { type: 'tree', x: 16, y: 1 },
           { type: 'tree', x: 2, y: 8 }, { type: 'tree', x: 9, y: 7 }, { type: 'tree', x: 16, y: 7 },
           { type: 'tree', x: 22, y: 2 }, { type: 'tree', x: 22, y: 8 }, { type: 'tree', x: 15, y: 13 },
-          { type: 'rock', x: 3, y: 5 }, { type: 'rock', x: 8, y: 9 }, { type: 'rock', x: 17, y: 13 }
+          { type: 'rock', x: 3, y: 5 }, { type: 'rock', x: 8, y: 9 }, { type: 'rock', x: 17, y: 13 },
+          { type: 'mountain', x: 4, y: 6 }, { type: 'mountain', x: 10, y: 6 }, { type: 'mountain', x: 21, y: 5 }
         ]
       },
       LAVA: {
@@ -932,8 +954,15 @@ function refreshMapLocks() {
         decorations: [
           { type: 'lavaVent', x: 1, y: 2 }, { type: 'lavaVent', x: 7, y: 3 }, { type: 'lavaVent', x: 20, y: 1 },
           { type: 'lavaVent', x: 6, y: 7 }, { type: 'lavaVent', x: 14, y: 7 }, { type: 'lavaVent', x: 13, y: 14 },
-          { type: 'crystal', x: 14, y: 4 }, { type: 'crystal', x: 5, y: 10 }, { type: 'crystal', x: 20, y: 11 }
+          { type: 'crystal', x: 14, y: 4 }, { type: 'crystal', x: 5, y: 10 }, { type: 'crystal', x: 20, y: 11 },
+          { type: 'mountain', x: 1, y: 9 }, { type: 'mountain', x: 20, y: 5 }, { type: 'mountain', x: 5, y: 13 }
         ]
+      },
+      WESTERN: {
+        id: 'WESTERN', name: 'Дикий Захід', difficulty: 'Складна', cols: 25, rows: 15,
+        theme: { bg: '#6b4427', grassDark: '#8a5a32', grassLight: '#a87440', pathColor: '#d6b27c', pathBorder: '#9a7047', pathDetail: '#c99d61', water: '#1d4ed8' },
+        pathPoints: [{ x: -0.5, y: 7 }, { x: 5, y: 7 }, { x: 5, y: 2 }, { x: 12, y: 2 }, { x: 12, y: 11 }, { x: 19, y: 11 }, { x: 19, y: 5 }, { x: 25.5, y: 5 }],
+        decorations: [{ type: 'rock', x: 2, y: 2 }, { type: 'rock', x: 9, y: 5 }, { type: 'rock', x: 16, y: 3 }, { type: 'rock', x: 22, y: 9 }, { type: 'tree', x: 2, y: 12 }, { type: 'tree', x: 9, y: 13 }, { type: 'tree', x: 16, y: 1 }, { type: 'tree', x: 22, y: 13 }, { type: 'mountain', x: 1, y: 4 }, { type: 'mountain', x: 8, y: 9 }, { type: 'mountain', x: 21, y: 7 }]
       },
 
       // ===== КАРТА 3: ВІЙСЬКОВИЙ ПОРТ =====
@@ -986,6 +1015,7 @@ function refreshMapLocks() {
           // Радарні вежі
           { type: 'radar', x: 21, y: 2 },
           { type: 'radar', x: 24, y: 9 },
+          { type: 'mountain', x: 21, y: 12 }, { type: 'mountain', x: 22, y: 1 },
           // Паливні цистерни
           { type: 'tank', x: 19, y: 5 },
           { type: 'tank', x: 20, y: 5 },
@@ -2654,6 +2684,7 @@ function refreshMapLocks() {
         this.target = null;
         this.angle = 0;
         this.investedEnergy = TOWER_TYPES[typeId].levels[0].cost;
+        this.shotsFired = 0;
         this.storedEnergy = 0;
         this.incomeTimer = 0;
         this.hp = CONFIG.farm.hp;
@@ -2877,7 +2908,7 @@ function refreshMapLocks() {
           }
           game.projectiles.push(new Projectile('DRONE_SHOT', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { splash: data.splash || 20 }));
         }
-        else if (['SCOUT', 'GUNNER', 'ENGINEER', 'MEDIC', 'FLAMETHROWER', 'ROCKETEER', 'DRONE_OPERATOR', 'TANKER', 'GENERAL'].includes(this.typeId)) {
+        else if (['SCOUT', 'COWBOY', 'GUNNER', 'ENGINEER', 'MEDIC', 'FLAMETHROWER', 'ROCKETEER', 'DRONE_OPERATOR', 'TANKER', 'GENERAL'].includes(this.typeId)) {
           const isFlamethrower = this.typeId === 'FLAMETHROWER';
           const splash = Number(data.splash) || (isFlamethrower ? 30 : 0);
           audio.shootArrow();
@@ -2890,6 +2921,11 @@ function refreshMapLocks() {
             dotInterval: 0.5,
             canTargetSub: this.typeId === 'DRONE_OPERATOR'
           }));
+          if (this.typeId === 'COWBOY' && ++this.shotsFired % 6 === 0) {
+            game.energy += 50;
+            game.updateUI();
+            showToast('Ковбой: +50 енергії!', 'success');
+          }
         }
       }
 
@@ -3668,7 +3704,7 @@ function refreshMapLocks() {
         this.difficulty = GAME_DIFFICULTIES[this.selectedDifficulty] || GAME_DIFFICULTIES.HARD;
 
         // Скидання параметрів гри
-        this.energy = CONFIG.startCoins;
+        this.energy = mapId === 'WESTERN' ? 400 : CONFIG.startCoins;
         this.lives = this.difficulty.lives;
         this.spawnQueue = [];
         this.spawnTimer = 0;
@@ -3697,7 +3733,15 @@ function refreshMapLocks() {
           const regulars = wave.queue.filter(enemy => enemy.type !== 'BOSS');
           const extra = Math.round(regulars.length * (this.difficulty.count - 1));
           const reinforcements = Array.from({ length: extra }, (_, i) => regulars[i % regulars.length]);
-          wave.queue = [...reinforcements, ...wave.queue].map(enemy => scaleEnemyForDifficulty(enemy, this.difficulty));
+          wave.queue = [...reinforcements, ...wave.queue].map(enemy => {
+            const scaled = scaleEnemyForDifficulty(enemy, this.difficulty);
+            if (mapId === 'WESTERN') {
+              for (const key of ['hp', 'maxHp']) {
+                if (Number.isFinite(scaled[key])) scaled[key] = Math.max(1, Math.round(scaled[key] * 0.5));
+              }
+            }
+            return scaled;
+          });
           wave.reward = Math.max(1, Math.round(wave.reward * this.difficulty.gold));
         });
 
@@ -3750,6 +3794,12 @@ function refreshMapLocks() {
         // Розмітка перешкод
         if (this.mapData.decorations) {
           this.mapData.decorations.forEach(d => {
+            if (d.type === 'mountain') {
+              for (let row = d.y; row < d.y + 2; row++) for (let col = d.x; col < d.x + 2; col++) {
+                if (col >= 0 && col < this.cols && row >= 0 && row < this.rows && this.grid[row][col] === 0) this.grid[row][col] = 2;
+              }
+              return;
+            }
             if (d.x >= 0 && d.x < this.cols && d.y >= 0 && d.y < this.rows) {
               if (this.grid[d.y][d.x] === 0) {
                 this.grid[d.y][d.x] = 2; // 2 = перешкода
@@ -3787,6 +3837,7 @@ function refreshMapLocks() {
         if (GameArt.landscape(ctx, this.mapData)) return;
         if (this.mapData.isNavalMap) {
           NavalArt.background(ctx, this.mapData);
+          this.mapData.decorations.filter(d => d.type === 'mountain').forEach(d => this.drawMountain(ctx, (d.x + 1) * this.tileSize, (d.y + 1) * this.tileSize, 2));
           return;
         }
 
@@ -3881,6 +3932,9 @@ function refreshMapLocks() {
               ctx.arc(cx - 2, cy - 2, 7, 0, Math.PI * 2);
               ctx.fill();
             }
+            else if (d.type === 'mountain') {
+              this.drawMountain(ctx, (d.x + 1) * this.tileSize, (d.y + 1) * this.tileSize, 2);
+            }
             else if (d.type === 'lavaVent') {
               // Гейзер лави
               ctx.fillStyle = '#1c1917';
@@ -3906,10 +3960,26 @@ function refreshMapLocks() {
         }
       }
 
+      drawMountain(ctx, x, y, scale = 1) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        x = 0; y = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.beginPath(); ctx.ellipse(x, y + 13, 18, 7, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3f4650';
+        ctx.beginPath(); ctx.moveTo(x - 19, y + 12); ctx.lineTo(x - 13, y - 5); ctx.lineTo(x - 5, y + 1); ctx.lineTo(x + 2, y - 16); ctx.lineTo(x + 19, y + 12); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#77818c';
+        ctx.beginPath(); ctx.moveTo(x - 13, y - 5); ctx.lineTo(x - 7, y + 1); ctx.lineTo(x - 2, y - 2); ctx.lineTo(x + 2, y - 16); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.moveTo(x - 3, y - 9); ctx.lineTo(x + 2, y - 16); ctx.lineTo(x + 7, y - 7); ctx.lineTo(x + 3, y - 9); ctx.lineTo(x + 1, y - 4); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+
       renderMapPreviews() {
-        ['VALLEY', 'LAVA', 'PORT'].forEach(id => {
+        ['VALLEY', 'LAVA', 'PORT', 'WESTERN'].forEach(id => {
           const map = MAP_DEFINITIONS[id];
-          const canvas = document.getElementById(id === 'VALLEY' ? 'preview-valley' : (id === 'LAVA' ? 'preview-lava' : 'preview-port'));
+          const canvas = document.getElementById(`preview-${id.toLowerCase()}`);
           if (!canvas) return;
           const ctx = canvas.getContext('2d');
           const scaleX = canvas.width / (25 * 40);
@@ -3943,6 +4013,10 @@ function refreshMapLocks() {
             else ctx.lineTo(px, py);
           });
           ctx.stroke();
+          ctx.save();
+          ctx.scale(scaleX, scaleY);
+          map.decorations.filter(d => d.type === 'mountain').forEach(d => this.drawMountain(ctx, (d.x + 1) * 40, (d.y + 1) * 40, 2));
+          ctx.restore();
         });
       }
 
@@ -4194,7 +4268,11 @@ function refreshMapLocks() {
       buildCost(type) {
         return type === 'FARM' ? Math.ceil(CONFIG.farm.cost * CONFIG.farm.growth ** this.counts().farm) : TOWER_TYPES[type].levels[0].cost;
       }
-      hasSlot(type) { const category = unitCategory(type); return this.counts()[category] < CONFIG.limits[category]; }
+      hasSlot(type) {
+        if (type === 'COWBOY' && this.towers.filter(t => t.typeId === 'COWBOY').length >= 6) return false;
+        const category = unitCategory(type);
+        return this.counts()[category] < CONFIG.limits[category];
+      }
       canUpgradeTower(t) {
         const next = t.getNextLevelData();
         if (!next) return false;
@@ -4538,6 +4616,15 @@ function refreshMapLocks() {
         if (this.currentWaveIndex >= totalWaves && !this.isWaveInProgress && this.enemies.length === 0 && this.state === 'PLAYING') {
           this.state = 'VICTORY';
           try { localStorage.setItem('tds-completed-maps', JSON.stringify([...new Set([...completedMaps(), this.currentMapId])])); } catch {}
+          if (this.currentMapId === 'WESTERN') {
+            const profile = window.playerProfile || loadPlayerProfile();
+            if (!profile.ownedUnits.includes('COWBOY')) profile.ownedUnits.push('COWBOY');
+            if (profile.loadout.length < 5 && !profile.loadout.includes('COWBOY')) profile.loadout.push('COWBOY');
+            savePlayerProfile(profile);
+            window.playerProfile = profile;
+            renderHeroLoadoutPreview(profile);
+            renderUnitCollectionUI();
+          }
           refreshMapLocks();
           audio.victory();
           this.dom.statVictoryLives.textContent = this.lives;
@@ -4549,6 +4636,8 @@ function refreshMapLocks() {
           if (subTitleEl) {
             if (this.currentMapId === 'PORT') {
               subTitleEl.innerHTML = '⚓ <b>Всі 30 хвиль відбито!</b> Авіаносець «Адмірал» потоплено!<br>🎁 Ви отримали: <b>«Військово-морська скриня Адмірала»</b> (+1500🪙 та звання Командувача Флоту)!';
+            } else if (this.currentMapId === 'WESTERN') {
+              subTitleEl.innerHTML = '🤠 <b>Дикий Захід пройдено!</b><br>Ви отримали нового юніта: <b>Ковбой</b>! Кожен шостий постріл дає 50 енергії.';
             } else {
               subTitleEl.textContent = 'Усі 25 хвиль відбито, Архідемона Руїни знищено, а королівство врятовано!';
             }
@@ -4871,7 +4960,8 @@ function refreshMapLocks() {
           const equipped = profile.loadout.includes(unit.id);
           const statusClass = !owned ? 'status-locked' : equipped ? 'status-equipped' : 'status-owned';
           const statusText = !owned ? 'Заблоковано' : equipped ? 'У строю' : 'Доступно';
-          const buttonText = !owned ? `КУПИТИ ${unit.cost} 🪙` : (equipped ? 'ЗНЯТИ' : 'ВИБРАТИ');
+          const cowboyLocked = unit.id === 'COWBOY' && !completedMaps().includes('WESTERN') && !owned;
+          const buttonText = cowboyLocked ? 'ПРОЙДІТЬ ДИКИЙ ЗАХІД' : !owned ? `КУПИТИ ${unit.cost} 🪙` : (equipped ? 'ЗНЯТИ' : 'ВИБРАТИ');
           return `
             <div class="unit-item-card rarity-${unit.rarity} ${window.selectedUnitId === unit.id ? 'selected' : ''}" data-unit-id="${unit.id}" style="border-color: ${owned ? '' : '#475569'};">
               <div class="unit-card-icon">${GameArt.portrait(unit.id, unit.icon)}</div>
@@ -4934,6 +5024,10 @@ function refreshMapLocks() {
     function handleUnitBuy(unitId) {
       const profile = window.playerProfile || loadPlayerProfile();
       const unit = getUnitConfig(unitId);
+      if (unitId === 'COWBOY' && !completedMaps().includes('WESTERN')) {
+        showToast('Спершу пройдіть карту «Дикий Захід»', 'error');
+        return;
+      }
       if (profile.ownedUnits.includes(unitId)) {
         const isEquipped = profile.loadout.includes(unitId);
         if (isEquipped) {
@@ -5059,6 +5153,23 @@ function refreshMapLocks() {
       document.getElementById('btn-nav-shop')?.addEventListener('click', () => openModal(modalShop));
       document.getElementById('btn-nav-quests')?.addEventListener('click', () => openModal(modalQuests));
       document.getElementById('btn-nav-settings')?.addEventListener('click', () => openModal(modalSettings));
+      document.getElementById('btn-test-cheat')?.addEventListener('click', () => {
+        try { localStorage.setItem('tds-completed-maps', JSON.stringify(CONFIG.mapOrder.slice(0, -1))); } catch {}
+        const profile = window.playerProfile || loadPlayerProfile();
+        if (!profile.ownedUnits.includes('COWBOY')) profile.ownedUnits.push('COWBOY');
+        if (!profile.loadout.includes('COWBOY')) {
+          if (profile.loadout.length >= 5) profile.loadout.pop();
+          profile.loadout.push('COWBOY');
+        }
+        savePlayerProfile(profile);
+        window.playerProfile = profile;
+        renderHeroLoadoutPreview(profile);
+        renderUnitCollectionUI();
+        window.game.renderBuildPanel();
+        refreshMapLocks();
+        showToast('Тестовий режим: карти відкриті, Ковбой доданий до набору', 'success');
+        openModal(modalMap);
+      });
 
       // Кнопки повернення назад
       document.getElementById('btn-back-mode-to-menu')?.addEventListener('click', closeAllMenus);

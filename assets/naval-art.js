@@ -108,7 +108,21 @@ const NavalArt = {
 
     for (const d of map.decorations) {
       const x = (d.x + 0.5) * tile, y = (d.y + 0.5) * tile;
-      if (d.type === 'warship') {
+      if (d.type === 'mountain') {
+        ctx.save();
+        ctx.translate(x + tile / 2, y + tile / 2);
+        ctx.scale(2, 2);
+        const x = 0, y = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.beginPath(); ctx.ellipse(x, y + 13, 18, 7, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#3f4650';
+        ctx.beginPath(); ctx.moveTo(x - 19, y + 12); ctx.lineTo(x - 13, y - 5); ctx.lineTo(x - 5, y + 1); ctx.lineTo(x + 2, y - 16); ctx.lineTo(x + 19, y + 12); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#77818c';
+        ctx.beginPath(); ctx.moveTo(x - 13, y - 5); ctx.lineTo(x - 7, y + 1); ctx.lineTo(x - 2, y - 2); ctx.lineTo(x + 2, y - 16); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#cbd5e1';
+        ctx.beginPath(); ctx.moveTo(x - 3, y - 9); ctx.lineTo(x + 2, y - 16); ctx.lineTo(x + 7, y - 7); ctx.lineTo(x + 3, y - 9); ctx.lineTo(x + 1, y - 4); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      } else if (d.type === 'warship') {
         this.ship(ctx, 'destroyer', x, y, 29, 0, 0, false, false);
       } else if (d.type === 'portTree') {
         ctx.fillStyle = '#185c4e';

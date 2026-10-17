@@ -936,6 +936,8 @@
     }
 
     /* Велика кнопка ГРАТИ */
+    .hero-action-buttons { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .hero-cheat-btn { min-height: 62px; }
     .btn-hero-play {
       position: relative;
       background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%);
@@ -1061,6 +1063,9 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 18px rgba(56, 189, 248, 0.25);
     }
+
+    #btn-test-cheat { border-color: #a855f7; color: #e9d5ff; }
+    #btn-test-cheat:hover { background: #3b1d5c; border-color: #d8b4fe; }
 
     .nav-tab-btn:active {
       transform: translateY(1px);
