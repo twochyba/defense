@@ -43,7 +43,7 @@ const NavalArt = {
         ctx.stroke();
       }
     }
-    ctx.globalAlpha = submerged ? 0.48 : 1;
+    ctx.globalAlpha *= submerged ? 0.48 : 1;
     this.sprite(ctx, name, 0, motion * 0.5, length, radius * 1.5);
     ctx.restore();
     return true;

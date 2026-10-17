@@ -1,3 +1,28 @@
+// Все параметры лимитов и новой экономики собраны здесь.
+const CONFIG = {
+  limits: { farm: 6, weak: 6, strong: 4 },
+  weakMaxDps: 15, startCoins: 100, sellRate: 0.6,
+  farm: { cost: 60, growth: 1.2, income: 5, interval: 3, hp: 100, enemyDps: 7, attackRange: 58 },
+  detectorRange: 165, mapOrder: ['VALLEY', 'LAVA', 'PORT']
+};
+// rate в старых юнитах — секунды между выстрелами, attackSpeed — выстрелы в секунду.
+function unitDps(data) { return data.damage * (data.attackSpeed ?? (data.rate > 0 ? 1 / data.rate : 0)); }
+function unitCategory(type, data = TOWER_TYPES[type].levels[0]) {
+  return ['FARM', 'POWER_PLANT', 'FACTORY'].includes(type) ? 'farm' : unitDps(data) <= CONFIG.weakMaxDps ? 'weak' : 'strong';
+}
+function completedMaps() {
+  try { const value = JSON.parse(localStorage.getItem('tds-completed-maps') || '[]'); return Array.isArray(value) ? value.filter(id => CONFIG.mapOrder.includes(id)) : []; }
+  catch { return []; }
+}
+function mapUnlocked(id) { const i = CONFIG.mapOrder.indexOf(id); return i === 0 || (i > 0 && completedMaps().includes(CONFIG.mapOrder[i - 1])); }
+function refreshMapLocks() {
+  document.querySelectorAll('.map-select-card').forEach(card => {
+    const locked = !mapUnlocked(card.dataset.map);
+    card.classList.toggle('map-locked', locked);
+    card.setAttribute('aria-disabled', String(locked));
+    card.title = locked ? 'Спершу пройдіть попередню карту' : 'Почати гру';
+  });
+}
     /* ==========================================================================
        1. ЗВУКОВА СИСТЕМА (СИНТЕЗ ЗВУКІВ ЧЕРЕЗ WEB AUDIO API БЕЗ ЗОВНІШНІХ ФАЙЛІВ)
        ========================================================================== */
@@ -829,6 +854,19 @@
     /* ==========================================================================
        3. КОНФІГУРАЦІЯ КАРТ (2 КАРТИ: ЗЕЛЕНА ДОЛИНА ТА ЛАВОВИЙ КАНЬЙОН)
        ========================================================================== */
+    TOWER_TYPES.FARM = { name: 'Ферма', icon: '🌾', desc: '+5 монет кожні 3 секунди. Вороги поруч можуть знищити ферму.', bulletSpeed: 0,
+      levels: [{ cost: CONFIG.farm.cost, damage: 0, rate: 0, range: 0, color: '#a3e635', upgradeCost: 0 }] };
+    TOWER_TYPES.SPEARMAN = { name: 'Копійник', icon: '🔱', desc: 'Ближній бій · 14 DPS', bulletSpeed: 700,
+      levels: [{ cost: 75, damage: 14, rate: 1, range: 68, color: '#fbbf24', upgradeCost: 0 }] };
+    TOWER_TYPES.WATCHER = { name: 'Дозорний', icon: '👁', desc: 'Виявляє невидимих для всіх юнітів · 8 DPS', bulletSpeed: 450,
+      levels: [{ cost: 100, damage: 8, rate: 1, range: CONFIG.detectorRange, canDetectStealth: true, color: '#22d3ee', upgradeCost: 0 }] };
+    TOWER_TYPES.ARCHER.name = 'Лучник';
+    Object.assign(TOWER_TYPES.ARCHER.levels[0], { cost: 50, damage: 10, rate: 1 });
+    Object.assign(TOWER_TYPES.CANNON.levels[0], { cost: 220, damage: 60, rate: 2 });
+    Object.assign(TOWER_TYPES.MAGE.levels[0], { cost: 150, damage: 22, rate: 1, splash: 48 });
+    // Остальные военные юниты и их улучшения остаются в игре.
+    for (const cfg of Object.values(TOWER_TYPES)) for (const data of cfg.levels) data.attackSpeed = data.rate > 0 ? 1 / data.rate : 0;
+
     const MAP_DEFINITIONS = {
       VALLEY: {
         id: 'VALLEY',
@@ -977,9 +1015,9 @@
     // Централізовані параметри легкої, нормальної та складної фаз. Межі 5 і 10
     // закріплені за нормальним і складним етапами відповідно.
     const GAME_DIFFICULTIES = {
-      NORMAL: { name: 'Звичайний', health: 1.15, speed: 1.05, count: 1, delay: 0.9, gold: 0.95, startEnergy: 450, lives: 20, airEvery: 3 },
-      HARD: { name: 'Складний', health: 1.7, speed: 1.18, count: 1.2, delay: 0.7, gold: 0.8, startEnergy: 425, lives: 15, airEvery: 3 },
-      NIGHTMARE: { name: 'Кошмар', health: 2.3, speed: 1.3, count: 1.4, delay: 0.5, gold: 0.65, startEnergy: 400, lives: 10, airEvery: 2 }
+      NORMAL: { name: 'Звичайний', health: 1.15, speed: 1.05, count: 1, delay: 0.9, gold: 0.95, startEnergy: CONFIG.startCoins, lives: 20, airEvery: 3 },
+      HARD: { name: 'Складний', health: 1.7, speed: 1.18, count: 1.2, delay: 0.7, gold: 0.8, startEnergy: CONFIG.startCoins, lives: 15, airEvery: 3 },
+      NIGHTMARE: { name: 'Кошмар', health: 2.3, speed: 1.3, count: 1.4, delay: 0.5, gold: 0.65, startEnergy: CONFIG.startCoins, lives: 10, airEvery: 2 }
     };
 
     function scaleEnemyForDifficulty(enemy, difficulty) {
@@ -1590,6 +1628,9 @@
           }
         }
         else if (this.type === 'MAGE') {
+          if (this.options.splash) game.enemies.forEach(e => {
+            if (e !== this.target && Math.hypot(e.x - this.targetPos.x, e.y - this.targetPos.y) <= this.options.splash) e.takeDamage(this.damage * 0.7, game, 'MAGIC');
+          });
           audio.enemyHit();
           if (this.target && !this.target.dead) {
             this.target.takeDamage(this.damage, game, 'MAGIC');
@@ -1871,6 +1912,7 @@
           pathPixelPoints = [{ x: target.x > 500 ? -40 : 1040, y: 60 + Math.random() * 480 }, target];
         }
         this.type = data.type;
+        this.isStealth = Boolean(data.isStealth);
         this.name = data.name || (data.type === 'NORMAL' ? 'Піхотинець' : (data.type === 'FAST' ? 'Бігун' : 'Танк'));
         this.maxHp = data.hp || data.maxHp;
         this.hp = this.maxHp;
@@ -1971,7 +2013,7 @@
       }
 
       takeDamage(amount, game, damageType = 'PHYSICAL') {
-        if (this.dead || amount <= 0) return;
+        if (this.dead || amount <= 0 || (this.isStealth && !game.canSee(this))) return;
         let finalDamage = amount;
         if (this.armor > 0) {
           finalDamage = Math.round(amount * (1 - this.armor));
@@ -2302,6 +2344,7 @@
 
       draw(ctx) {
         ctx.save();
+        if (this.isStealth && !window.game.canSee(this)) ctx.globalAlpha = 0.15 + Math.sin(this.animTimer * 7) * 0.04;
 
         // Тінь
         if (!this.navalSprite || !NavalArt.images[this.navalSprite]) {
@@ -2612,6 +2655,8 @@
         this.angle = 0;
         this.investedEnergy = TOWER_TYPES[typeId].levels[0].cost;
         this.storedEnergy = 0;
+        this.incomeTimer = 0;
+        this.hp = CONFIG.farm.hp;
         this.animRecoil = 0;
         this.anchorX = this.x;
         this.anchorY = this.y;
@@ -2642,7 +2687,7 @@
       }
 
       getSellValue() {
-        return Math.round(this.investedEnergy * 0.7);
+        return Math.floor(this.investedEnergy * CONFIG.sellRate);
       }
 
       upgrade() {
@@ -2665,6 +2710,16 @@
 
         const data = this.getLevelData();
 
+        if (this.typeId === 'FARM') {
+          this.incomeTimer += dt;
+          if (this.incomeTimer >= CONFIG.farm.interval) {
+            this.incomeTimer -= CONFIG.farm.interval;
+            game.energy += CONFIG.farm.income;
+            game.addParticle(this.x, this.y - 24, 0, -28, '#facc15', 1, 15, true, `+${CONFIG.farm.income}`);
+            game.updateUI();
+          }
+          return;
+        }
         if (this.typeId === 'POWER_PLANT') {
           if (game.state === 'PLAYING' && game.isWaveInProgress) {
             this.storedEnergy = Math.min(data.capacity, this.storedEnergy + data.energyRate * dt);
@@ -2707,11 +2762,11 @@
         }
 
         // Пошук цілі в радіусі дії (пріоритет: перший ворог по шляху)
-        if (this.typeId === 'SNIPER' || !this.target || this.target.dead || Math.hypot(this.target.x - this.x, this.target.y - this.y) > data.range) {
+        if (this.typeId === 'SNIPER' || !this.target || !game.canSee(this.target) || this.target.dead || Math.hypot(this.target.x - this.x, this.target.y - this.y) > data.range) {
           this.findTarget(game.enemies, data.range);
         }
 
-        if (this.target) {
+        if (this.target && game.canSee(this.target)) {
           const dx = this.target.x - this.x;
           const dy = this.target.y - this.y;
           this.angle = Math.atan2(dy, dx);
@@ -2734,7 +2789,7 @@
           if (e.dead) continue;
           // Підводні човни можуть бути атаковані тільки Дроном або спеціальними вежами
           if (e.isSubmerged && this.typeId !== 'SEA_DRONE') continue;
-          if (e.isStealth && !this.getLevelData().canDetectStealth && this.typeId !== 'SNIPER') continue;
+          if (e.isStealth && !window.game.canSee(e)) continue;
           const d = Math.hypot(e.x - this.x, e.y - this.y);
           if (d <= range) {
             const bossPriority = this.typeId === 'SNIPER';
@@ -2766,7 +2821,7 @@
             attackRange: data.range
           }));
         }
-        else if (this.typeId === 'ARCHER') {
+        else if (['ARCHER', 'SPEARMAN', 'WATCHER'].includes(this.typeId)) {
           audio.shootArrow();
           game.projectiles.push(new Projectile('ARCHER', this.x, this.y, this.target, data.damage, cfg.bulletSpeed));
         }
@@ -2776,7 +2831,7 @@
         }
         else if (this.typeId === 'MAGE') {
           audio.shootMagic();
-          game.projectiles.push(new Projectile('MAGE', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { slow: data.slow, slowDuration: data.slowDuration, freezeDuration: data.freezeDuration }));
+          game.projectiles.push(new Projectile('MAGE', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { splash: data.splash, slow: data.slow, slowDuration: data.slowDuration, freezeDuration: data.freezeDuration }));
         }
         else if (this.typeId === 'SNIPER') {
           game.projectiles.push(new Projectile('SNIPER', this.x, this.y, this.target, data.damage, cfg.bulletSpeed, { critChance: data.critChance }));
@@ -2886,7 +2941,13 @@
         // Малювання башти за типом та рівнем
         ctx.translate(this.x, this.y - (this.typeId === 'FALCON' ? 22 : 0));
 
-        if (GameArt.tower(ctx, this)) {
+        if (['FARM', 'SPEARMAN', 'WATCHER'].includes(this.typeId)) {
+          ctx.font = '25px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(this.getConfig().icon, 0, 8);
+          if (this.typeId === 'FARM') {
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(-17, -25, 34, 4);
+            ctx.fillStyle = '#a3e635'; ctx.fillRect(-17, -25, 34 * this.hp / CONFIG.farm.hp, 4);
+          }
+        } else if (GameArt.tower(ctx, this)) {
           // Level frame, selection and stars remain visible around the sprite.
         } else if (this.typeId === 'FALCON') {
           ctx.save();
@@ -3349,7 +3410,7 @@
         let furthestPathIndex = -1;
         if (this.stats.range > 0) {
           for (const enemy of game.enemies) {
-            if (enemy.dead || (enemy.isStealth && !this.stats.canDetectStealth)) continue;
+            if (enemy.dead || (enemy.isStealth && !game.canSee(enemy))) continue;
             if (Math.hypot(enemy.x - this.x, enemy.y - this.y) <= this.stats.range && enemy.pathIndex > furthestPathIndex) {
               target = enemy;
               furthestPathIndex = enemy.pathIndex;
@@ -3536,6 +3597,13 @@
         this.initDOM();
         this.renderMapPreviews();
         this.initInputs();
+        refreshMapLocks();
+        document.querySelectorAll('[data-shop-tab]').forEach(button => button.addEventListener('click', () => {
+          this.shopTab = button.dataset.shopTab;
+          this.selectedTower = null; this.updateInspectPanel();
+          document.querySelectorAll('[data-shop-tab]').forEach(b => b.setAttribute('aria-selected', String(b === button)));
+          this.refreshShop();
+        }));
         Promise.all([NavalArt.load(), GameArt.load()]).then(() => {
           if (this.mapData) this.preRenderBackground();
           this.renderMapPreviews();
@@ -3593,13 +3661,14 @@
       }
 
       loadMap(mapId) {
+        if (!mapUnlocked(mapId)) { showToast('Спершу пройдіть попередню карту', 'error'); return; }
         audio.init();
         this.currentMapId = mapId;
         this.mapData = MAP_DEFINITIONS[mapId];
         this.difficulty = GAME_DIFFICULTIES[this.selectedDifficulty] || GAME_DIFFICULTIES.HARD;
 
         // Скидання параметрів гри
-        this.energy = this.difficulty.startEnergy;
+        this.energy = CONFIG.startCoins;
         this.lives = this.difficulty.lives;
         this.spawnQueue = [];
         this.spawnTimer = 0;
@@ -3615,8 +3684,16 @@
         this.lightningEffects = [];
         this.factoryPaidWaves = new Set();
         this.selectedTower = null;
+        this.selectedBuildType = 'ARCHER';
+        this.gameSpeed = 1;
+        this.dom.btnSpeed.textContent = 'x1';
+        this.dom.btnPause.textContent = '⏸';
+        this.dom.btnPause.classList.remove('active');
         this.waves = mapId === 'PORT' ? generatePortWaveConfig() : generateWaveConfig();
-        this.waves.forEach(wave => {
+        this.waves.forEach((wave, waveIndex) => {
+          if (mapId === 'VALLEY') wave.queue = wave.queue.map(e => e.type === 'BOSS' ? e : { ...e, type: 'NORMAL', speed: Math.min(e.speed, 60), armor: 0 });
+          if (mapId === 'LAVA') wave.queue = wave.queue.map(e => e.type === 'TANK' ? { ...e, armor: 0.3 } : e);
+          if (mapId === 'PORT') wave.queue = wave.queue.map((e, i) => !e.isSubmerged && e.type !== 'BOSS' && i % 4 === 0 ? { ...e, isStealth: true } : e);
           const regulars = wave.queue.filter(enemy => enemy.type !== 'BOSS');
           const extra = Math.round(regulars.length * (this.difficulty.count - 1));
           const reinforcements = Array.from({ length: extra }, (_, i) => regulars[i % regulars.length]);
@@ -3697,8 +3774,11 @@
         }
 
         this.updateUI();
-        const defaultBuildType = (window.playerProfile || loadPlayerProfile()).loadout[0] || 'SCOUT';
-        this.selectBuildCard(defaultBuildType);
+        document.getElementById('stealth-hint').hidden = mapId !== 'PORT';
+        this.selectBuildCard('ARCHER');
+        this.shopTab = 'weak';
+        document.querySelectorAll('[data-shop-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.shopTab === 'weak')));
+        this.refreshShop();
       }
 
       preRenderBackground() {
@@ -3897,7 +3977,7 @@
 
         // Швидкість
         this.dom.btnSpeed.addEventListener('click', () => {
-          this.gameSpeed = this.gameSpeed === 3 ? 1 : this.gameSpeed + 1;
+          this.gameSpeed = this.gameSpeed === 2 ? 1 : 2;
           this.dom.btnSpeed.textContent = `x${this.gameSpeed}`;
           this.dom.btnSpeed.title = `Швидкість гри x${this.gameSpeed} (натисніть, щоб змінити)`;
           this.dom.btnSpeed.classList.toggle('active', this.gameSpeed > 1);
@@ -3936,11 +4016,7 @@
           this.loadMap(this.currentMapId);
         });
 
-        this.dom.btnVictoryRestart.addEventListener('click', () => {
-          this.state = 'MAP_SELECT';
-          this.dom.modalMapSelect.style.display = 'flex';
-          this.dom.modalVictory.style.display = 'none';
-        });
+        this.dom.btnVictoryRestart.addEventListener('click', () => this.loadMap(this.currentMapId));
 
         // Панель інспекції башти
         this.dom.btnCollectEnergy.addEventListener('click', () => {
@@ -3950,7 +4026,7 @@
           if (this.state !== 'PLAYING') return;
           if (this.selectedTower && this.selectedTower.canUpgrade()) {
             const cost = this.selectedTower.getUpgradeCost();
-            if (this.energy >= cost) {
+            if (this.energy >= cost && this.canUpgradeTower(this.selectedTower)) {
               this.energy -= cost;
               this.selectedTower.upgrade();
               audio.upgrade();
@@ -4095,11 +4171,12 @@
         }
 
         const currentProfile = window.playerProfile || loadPlayerProfile();
-        if (type !== 'POWER_PLANT' && !currentProfile.loadout.includes(type)) {
+        if (!this.getAvailableBuildTypes().includes(type)) {
           showToast('Виберіть одного з 5 активних юнітів для бою', 'error');
           return;
         }
 
+        if (!this.hasSlot(type) || this.energy < this.buildCost(type)) return;
         this.selectedBuildType = type;
         this.selectedTower = null;
         this.updateInspectPanel();
@@ -4109,10 +4186,42 @@
         });
       }
 
+      counts() {
+        const counts = { farm: 0, weak: 0, strong: 0 };
+        this.towers.forEach(t => counts[unitCategory(t.typeId, t.getLevelData())]++);
+        return counts;
+      }
+      buildCost(type) {
+        return type === 'FARM' ? Math.ceil(CONFIG.farm.cost * CONFIG.farm.growth ** this.counts().farm) : TOWER_TYPES[type].levels[0].cost;
+      }
+      hasSlot(type) { const category = unitCategory(type); return this.counts()[category] < CONFIG.limits[category]; }
+      canUpgradeTower(t) {
+        const next = t.getNextLevelData();
+        if (!next) return false;
+        const category = unitCategory(t.typeId, next);
+        return category === unitCategory(t.typeId, t.getLevelData()) || this.counts()[category] < CONFIG.limits[category];
+      }
+      canSee(enemy) {
+        return !enemy.isStealth || this.towers.some(t => t.getLevelData().canDetectStealth && Math.hypot(t.x - enemy.x, t.y - enemy.y) <= t.getLevelData().range);
+      }
+      refreshShop() {
+        const counts = this.counts();
+        document.getElementById('limit-counter').textContent = `Ферми: ${counts.farm}/${CONFIG.limits.farm} | Слабкі: ${counts.weak}/${CONFIG.limits.weak} | Сильні: ${counts.strong}/${CONFIG.limits.strong}`;
+        document.querySelectorAll('#build-panel .tower-card').forEach(card => {
+          const type = card.dataset.type, category = unitCategory(type), cost = this.buildCost(type);
+          const full = counts[category] >= CONFIG.limits[category], missing = Math.max(0, cost - this.energy);
+          card.disabled = full || missing > 0;
+          card.setAttribute('aria-disabled', String(card.disabled));
+          card.classList.toggle('disabled', card.disabled);
+          card.hidden = category !== (this.shopTab || 'weak') || (TOWER_TYPES[type].isNaval && this.currentMapId !== 'PORT');
+          card.querySelector('.tower-card-cost').textContent = full ? `Ліміт ${counts[category]}/${CONFIG.limits[category]}` : `🪙 ${cost}${missing ? ` · бракує ${missing}` : ''}`;
+          card.title = `${TOWER_TYPES[type].desc} · DPS ${unitDps(TOWER_TYPES[type].levels[0]).toFixed(1)}`;
+        });
+      }
       getAvailableBuildTypes() {
         const currentProfile = window.playerProfile || loadPlayerProfile();
         const available = (currentProfile.loadout || []).filter(type => !!TOWER_TYPES[type]);
-        return [...(available.length ? available : ['SCOUT']), 'POWER_PLANT'];
+        return [...new Set(['ARCHER', 'SPEARMAN', 'WATCHER', 'MAGE', 'CANNON', ...available, 'FARM', 'POWER_PLANT'])];
       }
 
       renderBuildPanel() {
@@ -4126,14 +4235,14 @@
           const shouldShow = this.currentMapId === 'PORT' ? true : !isNaval;
           const selectedClass = this.selectedBuildType === type ? 'selected' : '';
           return `
-            <div class="tower-card ${selectedClass}" data-type="${type}" title="${cfg.name}: ${cfg.desc}" style="display:${shouldShow ? 'flex' : 'none'};">
+            <button type="button" class="tower-card ${selectedClass}" data-type="${type}" title="${cfg.name}: ${cfg.desc}" style="display:${shouldShow ? 'flex' : 'none'};">
               <span class="key-hint">${index + 1}</span>
               <div class="tower-icon-box" style="color: ${cfg.levels[0].color || '#38bdf8'};">${GameArt.portrait(type, cfg.icon)}</div>
               <div class="tower-card-info">
                 <span class="tower-card-name">${cfg.name}</span>
                 <span class="tower-card-cost">⚡ ${cfg.levels[0].cost}</span>
               </div>
-            </div>
+            </button>
           `;
         }).join('');
 
@@ -4157,7 +4266,7 @@
         if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) return;
 
         const currentProfile = window.playerProfile || loadPlayerProfile();
-        if (this.selectedBuildType !== 'POWER_PLANT' && !currentProfile.loadout.includes(this.selectedBuildType)) {
+        if (!this.getAvailableBuildTypes().includes(this.selectedBuildType)) {
           showToast('Виберіть одного з 5 активних юнітів для бою', 'error');
           return;
         }
@@ -4174,11 +4283,13 @@
         // Якщо клікнули на вільне місце (grid == 0) — будуємо башту
         if (this.grid[row][col] === 0 && this.selectedBuildType) {
           const cfg = TOWER_TYPES[this.selectedBuildType];
-          const cost = cfg.levels[0].cost;
+          const cost = this.buildCost(this.selectedBuildType);
+          if (!this.hasSlot(this.selectedBuildType)) return;
 
           if (this.energy >= cost) {
             this.energy -= cost;
             const newTower = new Tower(this.selectedBuildType, col, row, this.tileSize);
+            newTower.investedEnergy = cost;
             this.towers.push(newTower);
             this.grid[row][col] = 3; // 3 = зайнято баштою
             this.totalTowersBuilt++;
@@ -4251,7 +4362,8 @@
         if (t.typeId === 'ROCKET_BOAT') specialText = ` | Ракети${curData.multiRocket ? ` | Залп ${curData.multiRocket} ракет!` : ''}`;
         if (t.typeId === 'SEA_DRONE') specialText = ` | Сканер субмарин${curData.deepScan ? ' | Глибоке сканування!' : ''}`;
 
-        let statLine = `Шкода: ${curData.damage} | Радіус: ${curData.range} | Швидкість: ${curData.rate}с${specialText}`;
+        let statLine = `DPS: ${unitDps(curData).toFixed(1)} | Шкода: ${curData.damage} | Радіус: ${curData.range} | Інтервал: ${curData.rate}с${specialText}`;
+        if (t.typeId === 'FARM') statLine = `+${CONFIG.farm.income} монет / ${CONFIG.farm.interval} с | HP: ${Math.max(0, Math.ceil(t.hp))}/${CONFIG.farm.hp} | Не атакує`;
         if (powerPlant) statLine = `${curData.name} | ${curData.energyRate} ⚡/с під час хвилі | Батарея: ${Math.floor(t.storedEnergy)} / ${curData.capacity} ⚡`;
         if (t.typeId === 'FACTORY') statLine = `Дохід: ${curData.income} ⚡ за хвилю | Не атакує`;
         if (t.typeId === 'MILITARY_BASE') statLine = `Шкода: ${curData.damage} | HP машини: ${curData.vehicleHp} | Перезарядка: ${curData.rate}с${specialText}`;
@@ -4269,7 +4381,8 @@
 
         if (t.canUpgrade()) {
           const cost = t.getUpgradeCost();
-          this.dom.btnUpgradeTower.disabled = this.energy < cost;
+          this.dom.btnUpgradeTower.disabled = this.energy < cost || !this.canUpgradeTower(t);
+          this.dom.btnUpgradeTower.title = this.canUpgradeTower(t) ? "" : "Ліміт сильної категорії: продайте юніта";
           this.dom.upgradeCost.textContent = cost;
           this.dom.btnUpgradeTower.style.display = 'inline-flex';
         } else {
@@ -4280,6 +4393,7 @@
       }
 
       updateUI() {
+        this.refreshShop();
         const totalWaves = this.waves.length || 25;
         this.dom.energy.textContent = this.energy;
         this.dom.lives.textContent = this.lives;
@@ -4287,15 +4401,6 @@
         this.dom.btnTopSkip.disabled = this.state !== 'PLAYING' || this.isWaveInProgress || this.currentWaveIndex >= totalWaves;
         this.dom.btnTopSkip.textContent = this.isWaveInProgress ? 'Бій триває' : '▶ Хвиля';
         this.dom.enemies.textContent = this.enemies.length + this.spawnQueue.length;
-
-        // Оновлення стану кнопок вибору башт за золотом
-        document.querySelectorAll('.tower-card').forEach(card => {
-          const type = card.getAttribute('data-type');
-          const cost = TOWER_TYPES[type].levels[0].cost;
-          const isAllowed = type === 'POWER_PLANT' || (window.playerProfile || loadPlayerProfile()).loadout.includes(type);
-          card.classList.toggle('disabled', !isAllowed || this.energy < cost);
-          card.title = isAllowed ? 'Підходить для бою' : 'Спочатку додайте цього юніта в 5 слотів';
-        });
 
         // Кнопка хвилі
         if (this.isWaveInProgress) {
@@ -4432,6 +4537,8 @@
 
         if (this.currentWaveIndex >= totalWaves && !this.isWaveInProgress && this.enemies.length === 0 && this.state === 'PLAYING') {
           this.state = 'VICTORY';
+          try { localStorage.setItem('tds-completed-maps', JSON.stringify([...new Set([...completedMaps(), this.currentMapId])])); } catch {}
+          refreshMapLocks();
           audio.victory();
           this.dom.statVictoryLives.textContent = this.lives;
           this.dom.statVictoryKills.textContent = this.totalKills;
@@ -4474,6 +4581,19 @@
           }
         }
 
+        // Фермы получают урон только от проходящих рядом живых врагов.
+        for (const farm of [...this.towers]) {
+          if (farm.typeId !== 'FARM') continue;
+          const attackers = this.enemies.filter(e => !e.dead && Math.hypot(e.x - farm.x, e.y - farm.y) <= CONFIG.farm.attackRange).length;
+          farm.hp -= attackers * CONFIG.farm.enemyDps * dt;
+          if (farm.hp <= 0) {
+            this.grid[farm.row][farm.col] = 0;
+            this.towers = this.towers.filter(t => t !== farm);
+            if (this.selectedTower === farm) this.selectedTower = null;
+            this.addParticle(farm.x, farm.y - 18, 0, -25, '#ef4444', 1, 14, true, 'Ферму знищено');
+            this.updateInspectPanel(); this.updateUI();
+          }
+        }
         // Оновлення веж
         this.towers.forEach(t => t.update(dt, this));
 
@@ -4581,7 +4701,7 @@
 
         // 3. Малювання башт
         this.towers.forEach(t => {
-          t.draw(ctx, t === this.selectedTower);
+          t.draw(ctx, t === this.selectedTower || Boolean(this.hoverTile && t.col === this.hoverTile.col && t.row === this.hoverTile.row));
         });
 
         // 4. Малювання ворогів
@@ -4979,7 +5099,7 @@
             item.setAttribute('aria-pressed', String(item === card));
           });
           const difficulty = GAME_DIFFICULTIES[card.dataset.mode];
-          document.getElementById('map-difficulty-summary').textContent = `Складність: ${difficulty.name} · ${difficulty.startEnergy} енергії · ${difficulty.lives} життів`;
+          document.getElementById('map-difficulty-summary').textContent = `Складність: ${difficulty.name} · ${CONFIG.startCoins} монет · ${difficulty.lives} життів`;
           modalMode.style.display = 'none';
           modalMap.style.display = 'flex';
           if (window.game && typeof window.game.selectBuildCard === 'function') {

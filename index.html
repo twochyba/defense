@@ -106,9 +106,9 @@
   <!-- ВЕРХНЯ ПАНЕЛЬ СТАНУ (ПІД ЧАС МАТЧУ) -->
   <header id="top-bar">
     <div class="stats-group">
-      <div class="stat-badge gold" title="Енергія для будівництва та покращень">
-        <span>⚡</span>
-        <span id="energy-val">425</span>
+      <div class="stat-badge gold" title="Монети для будівництва та покращень">
+        <span>🪙</span>
+        <span id="energy-val">100</span>
       </div>
       <div class="stat-badge lives" title="Залишок життів">
         <span>❤️</span>
@@ -134,13 +134,15 @@
 
     <div class="controls-group">
       <button id="btn-menu" class="btn-icon" title="Головне меню">🏠</button>
-      <button id="btn-speed" class="btn-icon" title="Зміна швидкості гри (x1 / x2 / x3)">x1</button>
+      <button id="btn-speed" class="btn-icon" title="Зміна швидкості гри (x1 / x2)">x1</button>
       <button id="btn-pause" class="btn-icon" title="Пауза гри">⏸</button>
       <button id="btn-sound" class="btn-icon active" title="Увімкнути/Вимкнути звук">🔊</button>
       <button id="btn-restart" class="btn-icon" title="Перезапустити або змінити карту">🔄</button>
     </div>
   </header>
 
+  <div id="limit-counter" role="status" aria-live="polite">Ферми: 0/6 | Слабкі: 0/6 | Сильні: 0/4</div>
+  <div id="stealth-hint" hidden>👁 Тут є невидимі вороги! Потрібен Дозорний.</div>
   <!-- ГОЛОВНИЙ ІГРОВИЙ КОНТЕЙНЕР -->
   <main id="game-container">
     <div id="canvas-wrapper">
@@ -167,6 +169,11 @@
     <!-- НИЖНЯ ПАНЕЛЬ КЕРУВАННЯ -->
     <div id="bottom-bar">
       <!-- Вибір башт для будівництва -->
+      <nav class="shop-tabs" aria-label="Категорії магазину">
+        <button type="button" data-shop-tab="farm" aria-selected="false">Ферми</button>
+        <button type="button" data-shop-tab="weak" aria-selected="true">Слабкі</button>
+        <button type="button" data-shop-tab="strong" aria-selected="false">Сильні</button>
+      </nav>
       <div class="tower-cards-container" id="build-panel">
         <div class="tower-card" data-type="ARCHER" title="Стрілець: швидка стрільба по одиничних цілях">
           <span class="key-hint">1</span>
@@ -278,7 +285,7 @@
     </div>
 
     <div class="guide-tip">
-      💡 Будуйте захист за ⚡. Натисніть «Іскру», щоб забрати заряд; покращуйте будівлі в їхній панелі. Клавіші: 1–6 (будівля), Пробіл (Хвиля/Пауза), Enter/N (наступна хвиля).
+      💡 Оберіть вкладку магазину, потім юніта й вільну клітинку. Ферми: +5 монет / 3 с; продаж: 60%. Пробіл — хвиля/пауза, Enter/N — наступна хвиля.
     </div>
   </main>
 
@@ -300,7 +307,7 @@
           <img class="mode-art" src="assets/images/ui/mode-normal.webp" alt="Оборона зеленої долини" decoding="async">
           <div class="mode-name">Стандартний фронт</div>
           <p class="mode-desc">Вороги: +15% здоров'я, +5% швидкості. Коротші інтервали між ворогами. Авіаналіт кожні 3 хвилі.</p>
-          <div class="mode-reward-badge">Старт: 450 ⚡ · 20 ❤️ · нагороди 95%</div>
+          <div class="mode-reward-badge">Старт: 100 🪙 · 20 ❤️ · нагороди 95%</div>
         </div>
 
         <!-- Складний режим -->
@@ -309,7 +316,7 @@
           <img class="mode-art" src="assets/images/ui/mode-hard.webp" alt="Важкий штурм" decoding="async">
           <div class="mode-name">Штурмовий прорив</div>
           <p class="mode-desc">Вороги: +70% здоров'я, +18% швидкості, на 20% більше піхоти й техніки. Інтервали коротші на 30%. Авіаналіт кожні 3 хвилі.</p>
-          <div class="mode-reward-badge">Старт: 425 ⚡ · 15 ❤️ · нагороди 80%</div>
+          <div class="mode-reward-badge">Старт: 100 🪙 · 15 ❤️ · нагороди 80%</div>
         </div>
 
         <!-- Найвища складність -->
@@ -318,7 +325,7 @@
           <img class="mode-art" src="assets/images/ui/mode-nightmare.webp" alt="Битва у вулканічній зоні" decoding="async">
           <div class="mode-name">Останній рубіж</div>
           <p class="mode-desc">Вороги: +130% здоров'я, +30% швидкості, на 40% більше піхоти й техніки. Інтервали вдвічі коротші. Авіаналіт кожні 2 хвилі.</p>
-          <div class="mode-reward-badge">Старт: 400 ⚡ · 10 ❤️ · нагороди 65%</div>
+          <div class="mode-reward-badge">Старт: 100 🪙 · 10 ❤️ · нагороди 65%</div>
         </div>
       </div>
 
@@ -571,8 +578,8 @@
         <button class="modal-close-btn" id="btn-close-map-modal">✖</button>
       </div>
       <p class="modal-subtitle">Оберіть сектор бойових дій перед висадкою підрозділів</p>
-      <p class="modal-subtitle" id="map-difficulty-summary">Складність: Складний · 425 енергії · 15 життів</p>
-      <p class="modal-subtitle">⚡ Збудуйте «Іскру» за 100 енергії. Вона працює під час хвиль — натискайте станцію, щоб збирати заряд на захист і покращення.</p>
+      <p class="modal-subtitle" id="map-difficulty-summary">Складність: Складний · 100 монет · 15 життів</p>
+      <p class="modal-subtitle">🪙 Ферми дають +5 кожні 3 с. Заробляйте на ворогах та хвилях, купуйте захист. Продаж повертає 60%.</p>
 
       <div class="map-cards-grid">
         <!-- Карта 1: Зелена долина -->
@@ -599,7 +606,7 @@
             <span class="map-diff diff-hard">Складна</span>
           </div>
           <p class="map-desc">
-            Пекельна ущелина з розпеченою лавою. Коротші шляхи з крутими перехрестями, де критично важливі ракетники та сповільнення.
+            Пекельна ущелина з розпеченою лавою. Довгий шлях з крутими поворотами, де критично важливі ракетники та сповільнення.
           </p>
         </div>
 
@@ -682,7 +689,7 @@
           <span class="modal-stat-val" id="stat-victory-kills">0</span>
         </div>
         <div class="modal-stat-item">
-          <span class="modal-stat-label">Залишок енергії ⚡</span>
+          <span class="modal-stat-label">Залишок монет 🪙</span>
           <span class="modal-stat-val" id="stat-victory-energy" style="color: var(--accent-gold);">0</span>
         </div>
       </div>

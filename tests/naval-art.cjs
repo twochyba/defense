@@ -81,6 +81,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     const game = window.game;
     const random = Math.random;
     Math.random = () => 0.25;
+    localStorage.setItem('tds-completed-maps', JSON.stringify(['VALLEY', 'LAVA']));
     try {
       for (const mapId of ['VALLEY', 'LAVA', 'PORT']) {
         let previous;
@@ -89,7 +90,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
           check(game.selectedDifficulty === id, 'Menu did not select difficulty');
           game.loadMap(mapId);
           const settings = GAME_DIFFICULTIES[id];
-          check(game.energy === settings.startEnergy && game.lives === settings.lives, 'Starting resources ignore difficulty');
+          check(game.energy === CONFIG.startCoins && game.lives === settings.lives, 'Starting resources ignore difficulty');
           check(document.getElementById('map-difficulty-summary').textContent.includes(settings.name), 'Map summary is stale');
           const first = game.waves[0].queue[0];
           const stats = { hp: first.hp, speed: first.speed, delay: first.delay, count: game.waves[0].queue.length };
@@ -127,6 +128,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     for (let r = 0; r < game.rows; r++) for (let c = 0; c < game.cols; c++) {
       if (game.grid[r][c] === 0) tiles.push({ col: c, row: r });
     }
+    game.energy = 1000;
     const startingEnergy = game.energy;
     game.selectBuildCard('POWER_PLANT');
     game.handleCanvasClick(tiles[0].col, tiles[0].row);
@@ -172,7 +174,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
     check(game.collectEnergy(plant) === 0, 'Sold plant still generates spendable energy');
     check(window.playerProfile.coins === profileCoins, 'Battle energy changed menu coins');
     game.loadMap('VALLEY');
-    check(game.energy === GAME_DIFFICULTIES.NORMAL.startEnergy && !game.towers.length && !game.spawnQueue.length, 'Restart kept old energy, buildings or queued enemies');
+    check(game.energy === CONFIG.startCoins && !game.towers.length && !game.spawnQueue.length, 'Restart kept old energy, buildings or queued enemies');
     for (const type of GameArt.towerTypes) new Tower(type, 8, 6, 40).draw(game.ctx, true);
     for (const type of ['NORMAL', 'FAST', 'TANK', 'BOSS', 'MARINE', 'ARMORED', 'ROCKET_S']) {
       const enemy = new Enemy({ type, hp: 100, speed: 30, radius: 18, reward: 1 }, [{x: 0,y: 0},{x: 100,y: 0}]);

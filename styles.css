@@ -1866,3 +1866,18 @@
       box-shadow: 0 0 35px rgba(245, 158, 11, 0.4);
       animation: modalPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
+/* Категории магазина и счетчик не перекрывают поле на небольших экранах. */
+[hidden] { display: none !important; }
+#limit-counter { text-align:center; padding:7px 10px; background:#111e30; color:#bfe9ff; font-size:13px; flex-shrink:0; }
+#stealth-hint { text-align:center; padding:7px; background:#49331a; color:#fde68a; font-size:13px; }
+.shop-tabs { display:flex; gap:6px; padding:8px; flex-shrink:0; }
+.shop-tabs button { cursor:pointer; padding:9px 15px; color:#cbd5e1; background:#1e293b; border:1px solid #475569; border-radius:7px; }
+.shop-tabs button[aria-selected="true"] { color:#fff; border-color:#38bdf8; background:#164363; }
+button.tower-card { font:inherit; text-align:left; color:inherit; }
+button.tower-card:disabled { cursor:not-allowed; filter:grayscale(0.75); opacity:0.55; }
+.tower-card-cost { white-space:normal; }
+.map-select-card.map-locked { opacity:.5; cursor:not-allowed; }
+.map-select-card.map-locked .map-name::after { content:' 🔒'; }
+.shop-tabs { flex-basis:100%; padding:0; }
+#build-panel { width:100%; min-width:0; }
